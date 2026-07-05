@@ -76,4 +76,3 @@ pnpm add <paquete>
 ## 9. Nota final
 Cualquier cambio en la configuración del monorepo debe hacerse desde la raíz para mantener los enlaces de `pnpm` consistentes.
 
-> Si necesitás que actualice el README con más detalles del dominio, las rutas disponibles o el uso de las APIs, avisame.
