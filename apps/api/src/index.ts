@@ -1,43 +1,80 @@
-import express from 'express';
+import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import userRoutes from './routes/useRoutes';
+import categoryRoutes from './routes/categoryRoutes'
+import restaurantRoutes from './routes/restaurantRoutes.js';
+import groupRoutes from './routes/groupRoutes.js';
+import sessionRoutes from './routes/sessionRoutes.js'
 
-// 1. Cargar variables de entorno del archivo .env
 dotenv.config();
 
-const app = express();
+const app: Application = express();
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI;
 
-// Middlewares básicos
+// Middleware de configuracion basica
 app.use(cors());
 app.use(express.json());
 
-// 2. Función para conectar a MongoDB Atlas
-const connectDB = async () => {
+// Inicializacion de las rutas de la aplicacion
+app.use('/api/users', userRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/restaurants', restaurantRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/session', sessionRoutes)
+
+// Verificacion de estado del servicio (Health Check)
+app.get('/api/health', (req: Request, res: Response) => {
+  const isConnected = mongoose.connection.readyState === 1;
+  res.status(isConnected ? 200 : 503).json({
+    status: 'active',
+    database: isConnected ? 'connected' : 'disconnected'
+  });
+});
+
+/**
+ * Establece la conexion con la base de datos MongoDB Atlas
+ */
+const initializeDatabase = async (): Promise<void> => {
   if (!MONGO_URI) {
-    console.error('❌ ERROR: La variable MONGO_URI no está definida en el .env');
+    console.error('Database connection failed: MONGO_URI environment variable is missing.');
     process.exit(1);
   }
 
   try {
-    console.log('⏳ Intentando conectar a MongoDB Atlas...');
     await mongoose.connect(MONGO_URI);
-    console.log('🚀 ¡CONEXIÓN EXITOSA! Tu backend ya habla con MongoDB Atlas.');
+    console.log('Database connection established successfully.');
   } catch (error) {
-    console.error('❌ Error al conectar a la base de datos:', error);
+    console.error('Database connection error:', error);
     process.exit(1);
   }
 };
 
-// 3. Ruta de prueba básica HTTP
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
-});
+/**
+ * Arranca la aplicacion Express
+ */
+const startServer = async (): Promise<void> => {
+  await initializeDatabase();
 
-// 4. Arrancar el servidor e iniciar la conexión
-app.listen(PORT, async () => {
-  console.log(`💻 Servidor HTTP corriendo en http://localhost:${PORT}`);
-  await connectDB();
-});
+  const server = app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+  });
+
+  // Manejo de apagado controlado (Graceful Shutdown)
+  const gracefulShutdown = async (signal: string): Promise<void> => {
+    console.log(`Received ${signal}. Shutting down gracefully...`);
+    server.close(async () => {
+      console.log('HTTP server closed.');
+      await mongoose.connection.close();
+      console.log('Database connection closed.');
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+};
+
+startServer();

@@ -1,19 +1,35 @@
 import { Schema, model, Document, Types } from 'mongoose';
 
+export interface IMemberReview {
+  userId: Types.ObjectId;
+  username: string;
+  comment: string;
+  createdAt: Date;
+}
+
 export interface IRestaurant extends Document {
+  groupId: Types.ObjectId;
   name: string;
   mapsLink: string;
-  categoryId: Types.ObjectId; // Referencia a la colección de Categorías
-  review?: string;
+  categoryId: Types.ObjectId;
+  memberReviews: IMemberReview[];
   votes: number;
   createdAt: Date;
 }
 
 const RestaurantSchema = new Schema<IRestaurant>({
+  groupId: { type: Schema.Types.ObjectId, ref: 'Group', required: true },
   name: { type: String, required: true },
   mapsLink: { type: String, required: true },
   categoryId: { type: Schema.Types.ObjectId, ref: 'Category', required: true },
-  review: { type: String, default: "" },
+  memberReviews: [
+    {
+      userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+      username: { type: String, required: true },
+      comment: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now }
+    }
+  ],
   votes: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 });
