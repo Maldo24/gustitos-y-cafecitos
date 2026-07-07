@@ -76,3 +76,4 @@ pnpm add <paquete>
 ## 9. Nota final
 Cualquier cambio en la configuración del monorepo debe hacerse desde la raíz para mantener los enlaces de `pnpm` consistentes.
 
+ 
