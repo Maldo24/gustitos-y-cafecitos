@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+@theme {
+  /* Paleta principal "Butter" para Gustitos y Cafecitos */
+  --color-butter-100: #FFF6D7; /* Buttercream */
+  --color-butter-200: #FFE8A8; /* Light Butter */
+  --color-butter-300: #FFD97A; /* Golden Butter */
+  --color-butter-400: #E9B957; /* Warm Honey */
+  --color-butter-500: #C28A3A; /* Toasted Caramel */
+}
