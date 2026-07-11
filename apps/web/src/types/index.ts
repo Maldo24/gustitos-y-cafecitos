@@ -2,6 +2,8 @@ export interface User {
   _id: string;
   username: string;
   email: string;
+  names: string,
+  firtsSurname: string,
   createdAt: string;
 }
 
