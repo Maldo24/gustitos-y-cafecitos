@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { restaurantController } from '../controllers/restaurantController.js';
+import { authenticateToken } from '../middlewares/authMiddleware.js';
 
 const router = Router();
+// Todos los endpoints de este archivo requerirán un token válido
+router.use(authenticateToken);
 
 // Crear restaurante en un grupo
 router.post('/', restaurantController.createRestaurant);

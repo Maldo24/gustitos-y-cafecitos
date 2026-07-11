@@ -2,35 +2,44 @@ import { Request, Response } from 'express';
 import { restaurantService } from '../services/restaurantService.js';
 
 export const restaurantController = {
-  async createRestaurant(req: Request, res: Response): Promise<void> {
+  async create(req: Request, res: Response): Promise<void> {
     try {
-      const { name, mapsLink, categoryId, groupId, creatorId, initialComment } = req.body;
+      const { groupId, name, mapsLink, categoryId, comment } = req.body;
+      const userId = (req as any).user?.userId; 
 
-      if (!name || !mapsLink || !categoryId || !groupId) {
-        res.status(400).json({ error: 'Los campos name, mapsLink, categoryId y groupId son requeridos' });
+      if (!groupId || !name || !categoryId || !comment) {
+        res.status(400).json({ error: 'Faltan campos obligatorios para registrar el restaurante' });
         return;
       }
 
+      if (!userId) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
+      }
+
+      // Solución error 1: Pasamos los argumentos sueltos en el orden del servicio
       const restaurant = await restaurantService.createRestaurant(
-        name, 
-        mapsLink, 
-        categoryId, 
-        groupId, 
-        creatorId, 
-        initialComment
+        name,
+        mapsLink || '', // Si no hay link, mandamos string vacío
+        categoryId,
+        groupId,
+        userId,
+        comment
       );
-      res.status(201).json({ message: 'Restaurante registrado en el grupo con exito', restaurant });
+
+      res.status(201).json({ message: 'Restaurante sugerido con exito', restaurant });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
   },
 
-  async listByGroup(req: Request, res: Response): Promise<void> {
+  async getByGroup(req: Request, res: Response): Promise<void> {
     try {
       const { groupId } = req.params;
 
+      // Solución error 2: Forzamos a TypeScript a tratar groupId como string
       if (typeof groupId !== 'string') {
-        res.status(400).json({ error: 'El identificador del grupo no es valido' });
+        res.status(400).json({ error: 'El groupId no es valido' });
         return;
       }
 
@@ -41,23 +50,25 @@ export const restaurantController = {
     }
   },
 
-  async addMemberReview(req: Request, res: Response): Promise<void> {
+  async addReview(req: Request, res: Response): Promise<void> {
     try {
       const { restaurantId } = req.params;
-      const { userId, comment } = req.body;
+      const { comment } = req.body;
+      const userId = (req as any).user?.userId; 
 
-      if (typeof restaurantId !== 'string' || !userId || !comment) {
-        res.status(400).json({ error: 'El restaurantId, userId y comment son requeridos' });
+      // Validamos explícitamente que restaurantId sea un string
+      if (typeof restaurantId !== 'string' || !comment) {
+        res.status(400).json({ error: 'El ID del restaurante y el comentario son requeridos' });
         return;
       }
 
-      const updatedRestaurant = await restaurantService.addReviewToRestaurant(restaurantId, userId, comment);
-      if (!updatedRestaurant) {
-        res.status(404).json({ error: 'Restaurante no encontrado' });
+      if (!userId) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
         return;
       }
 
-      res.status(200).json({ message: 'Reseña agregada con exito', restaurant: updatedRestaurant });
+      const restaurant = await restaurantService.addReviewToRestaurant(restaurantId, userId, comment);
+      res.status(200).json({ message: 'Resena agregada con exito', restaurant });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
