@@ -1,6 +1,8 @@
+import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 
 function Home() {
+    const navigate = useNavigate();
     return (
         <div className="flex flex-col md:flex-row min-h-screen bg-butter-100 font-sans w-full">
             <div className="w-full md:w-1/2 h-64 md:h-screen">
@@ -12,15 +14,15 @@ function Home() {
             </div>
             
             <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-8 text-center">
-                <h1 className="text-5xl font-bold mb-10">
+                <h1 className="text-4xl font-bold mb-10">
                     Recuerda tus <br/>restaurantes favoritos
                 </h1>
                 
                 <div className="flex flex-col w-full max-w-xs gap-4">
-                    <Button onClick={() => console.log("Registrarse")}>
+                    <Button onClick={() => navigate('/register')}>
                         Registrarse
                     </Button>
-                    <Button onClick={() => console.log("Iniciar Sesion")}>
+                    <Button onClick={() => navigate('/login')}>
                         Iniciar Sesión
                     </Button>
                 </div>
