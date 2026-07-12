@@ -1,15 +1,19 @@
 import { Router } from 'express';
 import { restaurantController } from '../controllers/restaurantController.js';
+import { authenticateToken } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
-// Crear restaurante en un grupo
-router.post('/', restaurantController.createRestaurant);
+// Todos los endpoints de este archivo requerirán un token válido
+router.use(authenticateToken);
 
-// Listar los restaurantes de un grupo especifico
-router.get('/group/:groupId', restaurantController.listByGroup);
+// POST /api/restaurants - Registrar un restaurante en un grupo
+router.post('/', restaurantController.create);
 
-// Agregar la reseña de un integrante a un restaurante existente
-router.post('/:restaurantId/reviews', restaurantController.addMemberReview);
+// GET /api/restaurants/group/:groupId - Listar restaurantes de un grupo
+router.get('/group/:groupId', restaurantController.getByGroup);
+
+// POST /api/restaurants/:restaurantId/reviews - Agregar reseña a un restaurante
+router.post('/:restaurantId/reviews', restaurantController.addReview);
 
 export default router;

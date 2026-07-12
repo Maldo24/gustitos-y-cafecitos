@@ -2,12 +2,20 @@ import { Request, Response } from 'express';
 import { groupService } from '../services/groupService.js';
 
 export const groupController = {
+
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const { name, creatorId } = req.body;
+      const { name } = req.body;
+      // Usamos as any para saltar el validador estricto del editor
+      const creatorId = (req as any).user?.userId; 
 
       if (!name) {
         res.status(400).json({ error: 'El nombre del grupo es requerido' });
+        return;
+      }
+
+      if (!creatorId) {
+        res.status(401).json({ error: 'Usuario no autenticado en el token' });
         return;
       }
 

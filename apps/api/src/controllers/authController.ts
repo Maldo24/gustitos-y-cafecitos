@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { authService } from '../services/authService.js';
+import { User } from '../models/User.js';
 
 export const authController = {
   async register(req: Request, res: Response): Promise<void> {
@@ -43,5 +44,39 @@ export const authController = {
     } catch (error: any) {
       res.status(401).json({ error: error.message });
     }
+  },
+  async getMe(req: Request, res: Response): Promise<void> {
+    try {
+      // Extraemos el ID del usuario que nuestro middleware inyectó en la petición
+      const userId = (req as any).user?.userId;
+
+      if (!userId) {
+        res.status(401).json({ error: 'No autenticado' });
+        return;
+      }
+
+      // Buscamos al usuario en la BD excluyendo su contraseña para mayor seguridad
+      const user = await User.findById(userId).select('-passwordHash');
+      
+      if (!user) {
+        res.status(404).json({ error: 'Usuario no encontrado' });
+        return;
+      }
+
+      // Devolvemos los datos limpios para que el frontend rearme la sesión
+      res.status(200).json({
+        success: true,
+        user: {
+          id: user._id,
+          username: user.username,
+          names: user.names,
+          firstSurname: user.firstSurname,
+          email: user.email
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   }
+  
 };
