@@ -2,7 +2,6 @@ import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import userRoutes from './routes/userRoutes.js';
 import categoryRoutes from './routes/categoryRoutes'
 import restaurantRoutes from './routes/restaurantRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
@@ -19,7 +18,6 @@ app.use(cors());
 app.use(express.json());
 
 // Inicializacion de las rutas de la aplicacion
-app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/groups', groupRoutes);
