@@ -13,4 +13,13 @@ router.get('/:slug', groupController.getBySlug);
 // POST /api/groups/:slug/restaurants - Añadir un restaurante sugerido al grupo
 router.post('/:slug/restaurants', groupController.suggestRestaurant);
 
+// POST /api/groups/:groupId/members
+router.post('/:groupId/members', groupController.addMember);
+
+// GET /api/groups/my-groups - Obtener los grupos del usuario logueado
+router.get('/my-groups', groupController.getMyGroups);
+
+// GET /api/groups/:groupId/members - Obtener la lista de miembros de un grupo
+router.get('/:groupId/members', groupController.getMembers);
+
 export default router;

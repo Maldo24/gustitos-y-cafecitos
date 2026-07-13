@@ -4,7 +4,8 @@ import { restaurantService } from '../services/restaurantService.js';
 export const restaurantController = {
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const { groupId, name, mapsLink, categoryId, comment } = req.body;
+      // Agregamos forceCreate al body que recibimos
+      const { groupId, name, mapsLink, categoryId, comment, forceCreate } = req.body;
       const userId = (req as any).user?.userId; 
 
       if (!groupId || !name || !categoryId || !comment) {
@@ -17,17 +18,24 @@ export const restaurantController = {
         return;
       }
 
-      // Solución error 1: Pasamos los argumentos sueltos en el orden del servicio
-      const restaurant = await restaurantService.createRestaurant(
+      const result = await restaurantService.createRestaurant(
         name,
-        mapsLink || '', // Si no hay link, mandamos string vacío
+        mapsLink || '', 
         categoryId,
         groupId,
         userId,
-        comment
+        comment,
+        forceCreate // Pasamos el flag al servicio
       );
 
-      res.status(201).json({ message: 'Restaurante sugerido con exito', restaurant });
+      // Si el servicio detecta similitudes, devolvemos 200 OK con el warning
+      if (result.status === 'WARNING_SIMILAR') {
+        res.status(200).json(result);
+        return;
+      }
+
+      // Si se crea correctamente, devolvemos 201 Created
+      res.status(201).json({ message: 'Restaurante sugerido con exito', restaurant: result.data });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
@@ -37,7 +45,6 @@ export const restaurantController = {
     try {
       const { groupId } = req.params;
 
-      // Solución error 2: Forzamos a TypeScript a tratar groupId como string
       if (typeof groupId !== 'string') {
         res.status(400).json({ error: 'El groupId no es valido' });
         return;
@@ -56,7 +63,6 @@ export const restaurantController = {
       const { comment } = req.body;
       const userId = (req as any).user?.userId; 
 
-      // Validamos explícitamente que restaurantId sea un string
       if (typeof restaurantId !== 'string' || !comment) {
         res.status(400).json({ error: 'El ID del restaurante y el comentario son requeridos' });
         return;
@@ -69,6 +75,33 @@ export const restaurantController = {
 
       const restaurant = await restaurantService.addReviewToRestaurant(restaurantId, userId, comment);
       res.status(200).json({ message: 'Resena agregada con exito', restaurant });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  },
+
+  async vote(req: Request, res: Response): Promise<void> {
+    try {
+      const { restaurantId } = req.params;
+      const userId = (req as any).user?.userId; 
+
+      if (typeof restaurantId !== 'string') {
+        res.status(400).json({ error: 'El ID del restaurante es inválido' });
+        return;
+      }
+
+      if (!userId) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
+      }
+
+      const updatedRestaurant = await restaurantService.toggleVote(restaurantId, userId);
+      
+      res.status(200).json({ 
+        message: 'Voto registrado/actualizado correctamente', 
+        votesCount: updatedRestaurant.votes.length, 
+        restaurant: updatedRestaurant
+      });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

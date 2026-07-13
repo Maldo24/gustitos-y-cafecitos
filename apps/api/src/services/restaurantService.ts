@@ -1,11 +1,13 @@
 import { Restaurant, IRestaurant } from '../models/Restaurant.js';
 import { Group } from '../models/Group.js';
+import { Types } from 'mongoose';
 import { Category } from '../models/Category.js';
 import { User } from '../models/User.js';
 
 export const restaurantService = {
   /**
    * Crea un restaurante dentro de un grupo e incluye la primera reseña si se proporciona.
+   * Ahora detecta similitudes si no se envía forceCreate = true.
    */
   async createRestaurant(
     name: string, 
@@ -13,13 +15,31 @@ export const restaurantService = {
     categoryId: string, 
     groupId: string,
     creatorId?: string,
-    initialComment?: string
-  ): Promise<IRestaurant> {
+    initialComment?: string,
+    forceCreate?: boolean
+  ) { // Quitamos la restricción de Promise<IRestaurant> porque ahora puede devolver un Warning
     const categoryExists = await Category.findById(categoryId);
     if (!categoryExists) throw new Error('La categoria especificada no existe');
 
     const groupExists = await Group.findById(groupId);
     if (!groupExists) throw new Error('El grupo especificado no existe');
+
+    // --- NUEVA LÓGICA DE SIMILITUDES ---
+    if (!forceCreate) {
+      const similarPlaces = await Restaurant.find({
+        groupId,
+        name: { $regex: name, $options: 'i' } // Búsqueda insensible a mayúsculas/minúsculas
+      });
+
+      if (similarPlaces.length > 0) {
+        return {
+          status: 'WARNING_SIMILAR',
+          message: 'Hay lugares con nombres similares en este grupo',
+          similarPlaces
+        };
+      }
+    }
+    // -----------------------------------
 
     const memberReviews = [];
 
@@ -41,17 +61,37 @@ export const restaurantService = {
       mapsLink,
       categoryId,
       groupId,
-      memberReviews
+      memberReviews,
+      votes: [] // Inicializamos explícitamente los votos
     });
 
-    return await newRestaurant.save();
+    const savedRestaurant = await newRestaurant.save();
+    return { status: 'CREATED', data: savedRestaurant };
   },
 
   /**
-   * Obtiene los restaurantes pertenecientes a un grupo.
+   * Obtiene los restaurantes pertenecientes a un grupo ordenados por votos.
    */
   async getRestaurantsByGroup(groupId: string): Promise<IRestaurant[]> {
-    return await Restaurant.find({ groupId }).populate('categoryId', 'name slug');
+    // Usamos el aggregate de MongoDB para poder ordenar por el tamaño del array 'votes'
+    return await Restaurant.aggregate([
+      { $match: { groupId: new Types.ObjectId(groupId) } }, // Filtramos por grupo
+      { 
+        $addFields: { 
+          votesCount: { $size: { $ifNull: ["$votes", []] } } // Contamos los votos
+        } 
+      },
+      { $sort: { votesCount: -1 } }, // Ordenamos: -1 es descendente (más votos primero)
+      {
+        $lookup: { // Esto reemplaza al .populate()
+          from: 'categories',
+          localField: 'categoryId',
+          foreignField: '_id',
+          as: 'categoryId'
+        }
+      },
+      { $unwind: "$categoryId" } // Devolvemos la categoría a un objeto simple
+    ]);
   },
 
   /**
@@ -61,6 +101,18 @@ export const restaurantService = {
     const user = await User.findById(userId);
     if (!user) throw new Error('El usuario no existe');
 
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) throw new Error('El restaurante no existe');
+
+    // Evitamos que el mismo usuario deje dos reseñas en la misma sucursal
+    const alreadyReviewed = restaurant.memberReviews.some(
+      (r) => r.userId.toString() === userId.toString()
+    );
+
+    if (alreadyReviewed) {
+      throw new Error('Ya comentaste en esta sucursal');
+    }
+
     const newReview = {
       userId: user._id as any,
       username: user.username,
@@ -68,11 +120,37 @@ export const restaurantService = {
       createdAt: new Date()
     };
 
-    // Usamos $push para insertar el objeto directamente en el array memberReviews
-    return await Restaurant.findByIdAndUpdate(
-      restaurantId,
-      { $push: { memberReviews: newReview } },
-      { new: true } // Retorna el documento actualizado
-    );
+    // Usamos el restaurante que ya buscamos para agregar la reseña y guardar
+    restaurant.memberReviews.push(newReview as any);
+    return await restaurant.save();
+  },
+
+  /**
+   * Agrega o quita el voto de un usuario en un restaurante
+   */
+  async toggleVote(restaurantId: string, userId: string) {
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (!restaurant) {
+      throw new Error('Restaurante no encontrado');
+    }
+
+    // Por seguridad, aseguramos que el arreglo exista
+    if (!restaurant.votes) {
+      restaurant.votes = [];
+    }
+
+    // Comprobamos si el usuario ya votó
+    const hasVoted = restaurant.votes.some(id => id.toString() === userId.toString());
+
+    if (hasVoted) {
+      // Si ya votó, filtramos el arreglo para quitar su ID
+      restaurant.votes = restaurant.votes.filter(id => id.toString() !== userId.toString());
+    } else {
+      // Si no ha votado, lo añadimos
+      restaurant.votes.push(userId as any);
+    }
+
+    await restaurant.save();
+    return restaurant;
   }
 };

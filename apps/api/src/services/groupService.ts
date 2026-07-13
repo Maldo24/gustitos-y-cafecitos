@@ -66,6 +66,56 @@ export const groupService = {
 
         group.savedRestaurants.push(restaurantExists._id as any);
         return await group.save();
+    },
+
+    //funcion para añadir miembros a los grupos
+    async addMemberToGroup(groupId: string, username: string) {
+        // 1. Buscamos al amigo
+        const userToAdd = await User.findOne({ username });
+        if (!userToAdd) {
+            throw new Error('No encontramos a ningún usuario con ese username');
+        }
+
+        // 2. Buscamos el grupo
+        const group = await Group.findById(groupId);
+        if (!group) {
+            throw new Error('El grupo no existe');
+        }
+
+        // 3. Verificamos que no esté ya dentro (convertimos a string para comparar bien)
+        const isAlreadyMember = group.members.some(
+        (memberId) => memberId.toString() === userToAdd._id.toString()
+        );
+        
+        if (isAlreadyMember) {
+            throw new Error('Tu amigo ya está en este grupo');
+        }
+
+        // 4. Lo agregamos y guardamos
+        group.members.push(userToAdd._id);
+        await group.save();
+        
+        return group;
+    }, 
+    // Buscamos todos los grupos donde el array 'members' contenga el ID del usuario
+    async getGroupsByUser(userId: string) {
+        const groups = await Group.find({ members: userId })
+        .populate('members', 'username names firstSurname') // Traemos info útil de los amigos
+        .sort({ createdAt: -1 }); // Los más recientes primero
+        
+        return groups;
+    },
+    async getGroupMembers(groupId: string) {
+        // Buscamos el grupo y rellenamos la información de los miembros
+        const group = await Group.findById(groupId)
+        .populate('members', 'username names firstSurname email'); 
+        
+        if (!group) {
+        throw new Error('Grupo no encontrado');
+        }
+
+        // Devolvemos directamente el arreglo de miembros
+        return group.members;
     }
 
 }
