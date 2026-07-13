@@ -62,5 +62,51 @@ export const groupController = {
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
+  },
+  async addMember(req: Request, res: Response): Promise<void> {
+    try {
+      const { groupId } = req.params;
+      const { username } = req.body; 
+
+      if (typeof groupId !== 'string' || !username) {
+        res.status(400).json({ error: 'El ID del grupo y el username del amigo son requeridos' });
+        return;
+      }
+
+      const group = await groupService.addMemberToGroup(groupId, username);
+      res.status(200).json({ message: 'Amigo agregado al grupo con exito', group });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  },
+  async getMyGroups(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req as any).user?.userId;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
+      }
+
+      const groups = await groupService.getGroupsByUser(userId);
+      res.status(200).json(groups);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+  async getMembers(req: Request, res: Response): Promise<void> {
+    try {
+      const { groupId } = req.params;
+
+      if (typeof groupId !== 'string') {
+        res.status(400).json({ error: 'El ID del grupo es requerido' });
+        return;
+      }
+
+      const members = await groupService.getGroupMembers(groupId);
+      res.status(200).json(members);
+    } catch (error: any) {
+      res.status(404).json({ error: error.message });
+    }
   }
 };

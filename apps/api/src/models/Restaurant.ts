@@ -13,7 +13,7 @@ export interface IRestaurant extends Document {
   mapsLink: string;
   categoryId: Types.ObjectId;
   memberReviews: IMemberReview[];
-  votes: number;
+  votes: Types.ObjectId[];
   createdAt: Date;
 }
 
@@ -30,7 +30,7 @@ const RestaurantSchema = new Schema<IRestaurant>({
       createdAt: { type: Date, default: Date.now }
     }
   ],
-  votes: { type: Number, default: 0 },
+  votes: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   createdAt: { type: Date, default: Date.now }
 });
 

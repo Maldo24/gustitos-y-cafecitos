@@ -16,4 +16,6 @@ router.get('/group/:groupId', restaurantController.getByGroup);
 // POST /api/restaurants/:restaurantId/reviews - Agregar reseña a un restaurante
 router.post('/:restaurantId/reviews', restaurantController.addReview);
 
+// POST /api/restaurants/:restaurantId/vote - Votar o quitar el voto a un restaurante
+router.post('/:restaurantId/vote', restaurantController.vote);
 export default router;
