@@ -1,4 +1,4 @@
-import { Restaurant, IRestaurant } from '../models/Restaurant.js';
+import { Restaurant, IRestaurant, IMemberReview } from '../models/Restaurant.js'; // <-- 1. Importamos IMemberReview
 import { Group } from '../models/Group.js';
 import { Types } from 'mongoose';
 import { Category } from '../models/Category.js';
@@ -14,7 +14,7 @@ export const restaurantService = {
    */
   async createRestaurant(
     name: string, 
-    mapsLink: string, // <-- Vuelve a ser obligatorio
+    mapsLink: string, 
     categoryId: string, 
     groupId: string,
     creatorId?: string,
@@ -32,7 +32,7 @@ export const restaurantService = {
       const safeRegexName = escapeRegex(name);
       const similarPlaces = await Restaurant.find({
         groupId,
-        name: { $regex: safeRegexName, $options: 'i' } // Búsqueda segura e insensible a mayúsculas/minúsculas
+        name: { $regex: safeRegexName, $options: 'i' } 
       });
 
       if (similarPlaces.length > 0) {
@@ -43,9 +43,8 @@ export const restaurantService = {
         };
       }
     }
-    // -----------------------------------
-
-    const memberReviews = [];
+    // Tipamos el arreglo para que TypeScript sepa qué va a recibir
+    const memberReviews: IMemberReview[] = []; 
 
     // Si el creador deja un comentario inicial, buscamos su nombre para la reseña
     if (creatorId && initialComment) {
@@ -62,11 +61,11 @@ export const restaurantService = {
 
     const newRestaurant = new Restaurant({
       name,
-      mapsLink, // Se guarda directamente, ya que es obligatorio
+      mapsLink, 
       categoryId,
       groupId,
       memberReviews,
-      votes: [] // Inicializamos explícitamente los votos
+      votes: [] 
     });
 
     const savedRestaurant = await newRestaurant.save();
@@ -77,24 +76,23 @@ export const restaurantService = {
    * Obtiene los restaurantes pertenecientes a un grupo ordenados por votos.
    */
   async getRestaurantsByGroup(groupId: string): Promise<IRestaurant[]> {
-    // Usamos el aggregate de MongoDB para poder ordenar por el tamaño del array 'votes'
     return await Restaurant.aggregate([
-      { $match: { groupId: new Types.ObjectId(groupId) } }, // Filtramos por grupo
+      { $match: { groupId: new Types.ObjectId(groupId) } }, 
       { 
         $addFields: { 
-          votesCount: { $size: { $ifNull: ["$votes", []] } } // Contamos los votos
+          votesCount: { $size: { $ifNull: ["$votes", []] } } 
         } 
       },
-      { $sort: { votesCount: -1 } }, // Ordenamos: -1 es descendente (más votos primero)
+      { $sort: { votesCount: -1 } }, 
       {
-        $lookup: { // Esto reemplaza al .populate()
+        $lookup: { 
           from: 'categories',
           localField: 'categoryId',
           foreignField: '_id',
           as: 'categoryId' 
         }
       },
-      { $unwind: "$categoryId" } // Devolvemos la categoría a un objeto simple
+      { $unwind: "$categoryId" } 
     ]);
   },
 
@@ -108,7 +106,6 @@ export const restaurantService = {
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) throw new Error('El restaurante no existe');
 
-    // Evitamos que el mismo usuario deje dos reseñas en la misma sucursal
     const alreadyReviewed = restaurant.memberReviews.some(
       (r) => r.userId.toString() === userId.toString()
     );
@@ -117,15 +114,16 @@ export const restaurantService = {
       throw new Error('Ya comentaste en esta sucursal');
     }
 
-    const newReview = {
+    //  Tipamos la nueva reseña con la interfaz correcta
+    const newReview: IMemberReview = {
       userId: user._id as any,
       username: user.username,
       comment,
       createdAt: new Date()
     };
 
-    // Usamos el restaurante que ya buscamos para agregar la reseña y guardar
-    restaurant.memberReviews.push(newReview as any);
+    //  Aseguramos el cast en el push para evitar advertencias de Mongoose
+    (restaurant.memberReviews as IMemberReview[]).push(newReview);
     return await restaurant.save();
   },
 
@@ -138,19 +136,15 @@ export const restaurantService = {
       throw new Error('Restaurante no encontrado');
     }
 
-    // Por seguridad, aseguramos que el arreglo exista
     if (!restaurant.votes) {
       restaurant.votes = [];
     }
 
-    // Comprobamos si el usuario ya votó
     const hasVoted = restaurant.votes.some(id => id.toString() === userId.toString());
 
     if (hasVoted) {
-      // Si ya votó, filtramos el arreglo para quitar su ID
       restaurant.votes = restaurant.votes.filter(id => id.toString() !== userId.toString());
     } else {
-      // Si no ha votado, lo añadimos
       restaurant.votes.push(userId as any);
     }
 
