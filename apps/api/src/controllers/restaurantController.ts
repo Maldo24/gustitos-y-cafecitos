@@ -4,12 +4,12 @@ import { restaurantService } from '../services/restaurantService.js';
 export const restaurantController = {
   async create(req: Request, res: Response): Promise<void> {
     try {
-      // Agregamos forceCreate al body que recibimos
       const { groupId, name, mapsLink, categoryId, comment, forceCreate } = req.body;
       const userId = (req as any).user?.userId; 
 
-      if (!groupId || !name || !categoryId || !comment) {
-        res.status(400).json({ error: 'Faltan campos obligatorios para registrar el restaurante' });
+      // MEJORA: Exigimos mapsLink ya que lo definimos como obligatorio en la BD
+      if (!groupId || !name || !categoryId || !mapsLink || !comment) {
+        res.status(400).json({ error: 'Faltan campos obligatorios para registrar el restaurante (incluyendo mapsLink)' });
         return;
       }
 
@@ -20,12 +20,12 @@ export const restaurantController = {
 
       const result = await restaurantService.createRestaurant(
         name,
-        mapsLink || '', 
+        mapsLink, // Ya no necesitamos el "|| ''" porque verificamos arriba que exista
         categoryId,
         groupId,
         userId,
         comment,
-        forceCreate // Pasamos el flag al servicio
+        forceCreate 
       );
 
       // Si el servicio detecta similitudes, devolvemos 200 OK con el warning
@@ -86,7 +86,7 @@ export const restaurantController = {
       const userId = (req as any).user?.userId; 
 
       if (typeof restaurantId !== 'string') {
-        res.status(400).json({ error: 'El ID del restaurante es inválido' });
+        res.status(400).json({ error: 'El ID del restaurante es invalido' });
         return;
       }
 

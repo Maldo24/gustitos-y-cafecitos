@@ -21,8 +21,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       return;
     }
 
-    // Guardamos los datos estructurados en la petición
-    req.user = decoded; 
+    (req as any).user = decoded; 
     next();
   } catch (error) {
     res.status(403).json({ error: 'Token invalido o expirado.' });

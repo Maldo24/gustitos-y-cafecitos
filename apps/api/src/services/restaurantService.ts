@@ -4,31 +4,35 @@ import { Types } from 'mongoose';
 import { Category } from '../models/Category.js';
 import { User } from '../models/User.js';
 
+// Utilidad para evitar errores si el usuario usa caracteres especiales en el nombre (Ej: paréntesis, asteriscos)
+const escapeRegex = (text: string) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+
 export const restaurantService = {
   /**
    * Crea un restaurante dentro de un grupo e incluye la primera reseña si se proporciona.
-   * Ahora detecta similitudes si no se envía forceCreate = true.
+   * Detecta similitudes si no se envía forceCreate = true.
    */
   async createRestaurant(
     name: string, 
-    mapsLink: string, 
+    mapsLink: string, // <-- Vuelve a ser obligatorio
     categoryId: string, 
     groupId: string,
     creatorId?: string,
     initialComment?: string,
     forceCreate?: boolean
-  ) { // Quitamos la restricción de Promise<IRestaurant> porque ahora puede devolver un Warning
+  ) { 
     const categoryExists = await Category.findById(categoryId);
     if (!categoryExists) throw new Error('La categoria especificada no existe');
 
     const groupExists = await Group.findById(groupId);
     if (!groupExists) throw new Error('El grupo especificado no existe');
 
-    // --- NUEVA LÓGICA DE SIMILITUDES ---
+    // --- LÓGICA DE SIMILITUDES (Segura) ---
     if (!forceCreate) {
+      const safeRegexName = escapeRegex(name);
       const similarPlaces = await Restaurant.find({
         groupId,
-        name: { $regex: name, $options: 'i' } // Búsqueda insensible a mayúsculas/minúsculas
+        name: { $regex: safeRegexName, $options: 'i' } // Búsqueda segura e insensible a mayúsculas/minúsculas
       });
 
       if (similarPlaces.length > 0) {
@@ -58,7 +62,7 @@ export const restaurantService = {
 
     const newRestaurant = new Restaurant({
       name,
-      mapsLink,
+      mapsLink, // Se guarda directamente, ya que es obligatorio
       categoryId,
       groupId,
       memberReviews,
@@ -87,7 +91,7 @@ export const restaurantService = {
           from: 'categories',
           localField: 'categoryId',
           foreignField: '_id',
-          as: 'categoryId'
+          as: 'categoryId' 
         }
       },
       { $unwind: "$categoryId" } // Devolvemos la categoría a un objeto simple

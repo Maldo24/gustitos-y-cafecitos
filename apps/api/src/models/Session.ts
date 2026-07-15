@@ -7,15 +7,17 @@ export interface IItemConsumed {
 }
 
 export interface ISessionParticipant {
-  name: string; // Puede ser el username de un User, o un texto para invitados anónimos
-  userId?: Types.ObjectId; // Opcional, por si es un usuario registrado
-  itemsConsumed: IItemConsumed[]; // Detalle plano de lo que comió esa noche
-  finalPay: number; // Monto total calculado a pagar por esta persona
+  _id?: Types.ObjectId; // Útil para que Mongoose identifique este subdocumento
+  name: string;
+  userId?: Types.ObjectId;
+  itemsConsumed: IItemConsumed[];
+  finalPay: number;
+  isPaid: boolean; // <-- NUEVO: Control de estado de pago
 }
 
 export interface ISession extends Document {
-  groupId?: Types.ObjectId; // Opcional. Si es null, significa que es una salida espontánea
-  title: string; // Ej: "Almuerzo espontáneo Oficina"
+  groupId?: Types.ObjectId;
+  title: string;
   totalAmount: number;
   tipPercentage: number;
   splitMode: 'equal' | 'by_consumption';
@@ -44,7 +46,8 @@ const SessionSchema = new Schema<ISession>({
           quantity: { type: Number, required: true, default: 1 }
         }
       ],
-      finalPay: { type: Number, required: true, default: 0 }
+      finalPay: { type: Number, required: true, default: 0 },
+      isPaid: { type: Boolean, default: false } // <-- NUEVO: Por defecto nadie ha pagado
     }
   ],
   createdAt: { type: Date, default: Date.now }
