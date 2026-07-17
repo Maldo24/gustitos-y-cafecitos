@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 import { login } from "../api/auth";
 import Input from "../components/Input";
 
 function Login() {
   const navigate = useNavigate();
+  const { loginContext } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,7 +19,7 @@ function Login() {
     try {
       const response = await login(username, password);
       
-      localStorage.setItem('token', response.accessToken);
+      loginContext(response.user, response.accessToken);
       
       alert(`¡Bienvenido ${response.user.names}!`);
     } catch (err: unknown) {
