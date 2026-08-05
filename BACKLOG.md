@@ -10,9 +10,9 @@
 
 ## 2. Autenticación (completar flujo existente)
 
-- [ ] Reemplazar el `alert()` post-login por navegación real (ej. a `/dashboard`) usando `useNavigate` — el `AuthContext` y `loginContext()` ya están listos para esto, solo falta el `navigate()` en `Login.tsx`.
+- [x] Reemplazar el `alert()` post-login por navegación real (ej. a `/dashboard`) usando `useNavigate` — el `AuthContext` y `loginContext()` ya están listos para esto, solo falta el `navigate()` en `Login.tsx`.
 - [ ] Manejo de estado de carga (`loading`) en botones de submit de Login/Register para evitar doble envío.
-- [ ] Validación de formulario en cliente (email válido, password mínimo, campos requeridos) antes de pegarle al backend.
+- [x] Validación de formulario en cliente (email válido, password mínimo, campos requeridos) antes de pegarle al backend.
 - [x] ~~Botón de Logout~~ — agregado en `Navbar.tsx`, funcional (limpia contexto + `localStorage` + redirige a `/login`).
 - [x] ~~Navbar dinámica~~ — ya distingue logueado/no logueado (muestra botón de logout). **Pendiente**: agregar link visible a `/dashboard` / "Mis Grupos" cuando el usuario está logueado (hoy solo aparece el botón de salir).
 
