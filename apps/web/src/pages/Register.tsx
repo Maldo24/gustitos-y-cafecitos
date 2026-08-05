@@ -19,6 +19,19 @@ function Register() {
     e.preventDefault();
     setError("");
 
+    const usernameRegex = /^[a-zA-Z0-9]{3,20}$/;
+    if(!usernameRegex.test(formData.username)){
+      setError("El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras y numeros.");
+      return;
+    }
+
+
+    const passwordRegex =  /^(?=.*[0-9])(?=.*[a-zA-Z])[a-zA-Z0-9]{8,}$/ ;
+    if(!passwordRegex.test(formData.password)){
+      setError("La contrasena debe tener al menos 8 carcteres y contener al menos un numero y una letra.");
+      return;
+    }
+
     try {
       // Llamada real al backend
       await register(formData);

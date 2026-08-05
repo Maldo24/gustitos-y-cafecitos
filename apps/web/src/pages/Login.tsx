@@ -21,7 +21,7 @@ function Login() {
       
       loginContext(response.user, response.accessToken);
       
-      alert(`¡Bienvenido ${response.user.names}!`);
+      navigate("/dashboard");
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
