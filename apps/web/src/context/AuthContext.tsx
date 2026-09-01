@@ -1,5 +1,8 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
+import { getMe } from '../api/auth';
+import { setUnauthorizedHandler } from '../api/client';
 
 /* eslint-disable react-refresh/only-export-components */
 
@@ -12,6 +15,7 @@ export interface AuthUser {
 
 interface AuthContextType {
   user: AuthUser | null;
+  isLoading: boolean;
   loginContext: (userData: AuthUser, token: string) => void;
   logout: () => void;
 }
@@ -19,19 +23,44 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  
-  // 2. Solución al Error 1: Leemos el localStorage directamente en el useState
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-    
-    if (storedUser && storedToken) {
-      return JSON.parse(storedUser);
-    }
-    return null;
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !!localStorage.getItem('token'));
+  const navigate = useNavigate();
 
-  // (Ya eliminamos el useEffect por completo)
+  const logout = useCallback(() => {
+    setUser(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+  }, []);
+
+  useEffect(() => {
+    if (!localStorage.getItem('token')) return;
+
+    getMe()
+      .then((data) => {
+        setUser({
+          username: data.user.username,
+          names: data.user.names,
+          firstSurname: data.user.firstSurname,
+          email: data.user.email,
+        });
+      })
+      .catch(() => {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+      navigate('/login');
+    };
+    setUnauthorizedHandler(handleUnauthorized);
+  }, [logout, navigate]);
 
   const loginContext = (userData: AuthUser, token: string) => {
     setUser(userData);
@@ -39,14 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('token', token);
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-  };
-
   return (
-    <AuthContext.Provider value={{ user, loginContext, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, loginContext, logout }}>
       {children}
     </AuthContext.Provider>
   );

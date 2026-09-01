@@ -1,4 +1,11 @@
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+type UnauthorizedHandler = () => void;
+let unauthorizedHandler: UnauthorizedHandler | null = null;
+
+export function setUnauthorizedHandler(handler: UnauthorizedHandler) {
+  unauthorizedHandler = handler;
+}
 
 export async function apiClient<T>(
   endpoint: string,
@@ -17,6 +24,10 @@ export async function apiClient<T>(
   }
 
   const response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401) {
+    unauthorizedHandler?.();
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

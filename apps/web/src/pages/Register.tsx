@@ -14,10 +14,12 @@ function Register() {
     password: "",
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (loading) return;
 
     const usernameRegex = /^[a-zA-Z0-9]{3,20}$/;
     if(!usernameRegex.test(formData.username)){
@@ -32,6 +34,8 @@ function Register() {
       return;
     }
 
+    setLoading(true);
+
     try {
       // Llamada real al backend
       await register(formData);
@@ -43,6 +47,8 @@ function Register() {
       } else {
         setError("Ocurrió un error inesperado al registrarse.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -121,8 +127,8 @@ function Register() {
             </div>
 
             <div className="mt-2">
-              <Button type="submit" className="w-full">
-                Registrarme
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Registrando..." : "Registrarme"}
               </Button>
             </div>
           </form>

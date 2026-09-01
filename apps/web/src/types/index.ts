@@ -39,3 +39,29 @@ export interface Group {
   savedRestaurants: string[] | Restaurant[];
   createdAt: string;
 }
+
+export interface ItemConsumed {
+  dishName: string;
+  price: number;
+  quantity: number;
+}
+
+export interface SessionParticipant {
+  _id?: string;
+  name: string;
+  userId?: string;
+  itemsConsumed: ItemConsumed[];
+  finalPay: number;
+  isPaid: boolean;
+}
+
+export interface Session {
+  _id: string;
+  groupId?: string;
+  title: string;
+  totalAmount: number;
+  tipPercentage: number;
+  splitMode: 'equal' | 'by_consumption';
+  participants: SessionParticipant[];
+  createdAt: string;
+}
