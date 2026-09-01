@@ -8,7 +8,7 @@ const router = Router();
 router.post('/',authenticateToken, groupController.create);
 
 // GET /api/groups/my-groups - Obtener los grupos del usuario logueado
-router.get('/my-groups', groupController.getMyGroups);
+router.get('/my-groups', authenticateToken, groupController.getMyGroups);
 
 // GET /api/groups/:slug - Obtener el grupo completo por su URL unica
 router.get('/:slug', groupController.getBySlug);
