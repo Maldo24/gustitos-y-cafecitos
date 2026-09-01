@@ -2,11 +2,11 @@ import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import categoryRoutes from './routes/categoryRoutes'
+import categoryRoutes from './routes/categoryRoutes.js';
 import restaurantRoutes from './routes/restaurantRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
-import sessionRoutes from './routes/sessionRoutes.js'
-import authRoutes from "./routes/authRoutes.js"
+import sessionRoutes from './routes/sessionRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 dotenv.config();
 
 const app: Application = express();
@@ -21,8 +21,8 @@ app.use(express.json());
 app.use('/api/categories', categoryRoutes);
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/groups', groupRoutes);
-app.use('/api/session', sessionRoutes)
-app.use ('/api/auth', authRoutes)
+app.use('/api/sessions', sessionRoutes)
+app.use('/api/auth', authRoutes)
 // Verificacion de estado del servicio (Health Check)
 app.get('/api/health', (req: Request, res: Response) => {
   const isConnected = mongoose.connection.readyState === 1;

@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoutes';
 import Dashboard from './pages/Dashboard';
+import GroupDetail from './pages/GroupDetail';
 
 function App() {
   return (
@@ -17,7 +18,14 @@ function App() {
         <main className="mx-auto w-full flex-1 overflow-hidden">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/grupo/:slug" element={<h2>Vista de Grupo (Próximamente)</h2>} />
+            <Route 
+                path="/grupo/:slug" 
+                element={
+                  <ProtectedRoute>
+                    <GroupDetail />
+                  </ProtectedRoute>
+                } 
+              />
             <Route path="*" element={<h2>404 - No encontrado</h2>} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />

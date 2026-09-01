@@ -19,6 +19,12 @@ function Navbar() {
       <div>
         {user ? (
           <div className="flex items-center gap-4">
+            <Link
+              to="/dashboard"
+              className="text-butter-100 font-bold hover:underline transition-opacity"
+            >
+              Mis Grupos
+            </Link>
             <Button 
               onClick={handleLogout}
             >

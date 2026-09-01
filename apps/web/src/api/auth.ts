@@ -25,6 +25,17 @@ interface LoginResponse {
   accessToken: string;
 }
 
+interface MeResponse {
+  success: boolean;
+  user: {
+    id: string;
+    username: string;
+    names: string;
+    firstSurname: string;
+    email: string;
+  };
+}
+
 export async function register(data: RegisterData): Promise<RegisterResponse> {
   return apiClient<RegisterResponse>('/auth/register', {
     method: 'POST',
@@ -37,4 +48,8 @@ export async function login(username: string, password: string): Promise<LoginRe
     method: 'POST',
     body: JSON.stringify({ username, password }),
   });
+}
+
+export async function getMe(): Promise<MeResponse> {
+  return apiClient<MeResponse>('/auth/me');
 }

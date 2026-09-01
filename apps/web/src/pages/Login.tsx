@@ -11,10 +11,13 @@ function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (loading) return;
+    setLoading(true);
     
     try {
       const response = await login(username, password);
@@ -28,6 +31,8 @@ function Login() {
       } else {
         setError("Ocurrió un error inesperado.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,7 +69,9 @@ function Login() {
             </div>
 
             <div className="mt-4">
-              <Button type="submit" className="w-full">Entrar</Button>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Entrando..." : "Entrar"}
+              </Button>
             </div>
           </form>
 
