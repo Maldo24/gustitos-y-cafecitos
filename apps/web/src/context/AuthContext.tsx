@@ -7,6 +7,7 @@ import { setUnauthorizedHandler } from '../api/client';
 /* eslint-disable react-refresh/only-export-components */
 
 export interface AuthUser {
+  id?: string;
   username: string;
   names: string;
   firstSurname: string;
@@ -39,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     getMe()
       .then((data) => {
         setUser({
+          id: data.user.id,
           username: data.user.username,
           names: data.user.names,
           firstSurname: data.user.firstSurname,
