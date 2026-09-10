@@ -34,6 +34,7 @@ export const authController = {
         success: true,
         message: `Inicio de sesion exitoso del usuario ${user.username}`,
         user: {
+          id: user._id,
           username: user.username,
           names: user.names,
           firstSurname: user.firstSurname,

@@ -27,7 +27,8 @@ export interface Restaurant {
   mapsLink: string;
   categoryId: string | Category;
   memberReviews: MemberReview[];
-  votes: number;
+  votes: string[];
+  votesCount?: number;
   createdAt: string;
 }
 
