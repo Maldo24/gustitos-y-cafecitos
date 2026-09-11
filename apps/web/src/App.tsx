@@ -12,6 +12,8 @@ import GroupDetail from './pages/GroupDetail';
 import CreateSession from './pages/CreateSession';
 import SessionDetail from './pages/SessionDetail';
 import NotFound from './pages/NotFound';
+import AdminPanel from './pages/AdminPanel';
+import AdminRoute from './components/AdminRoute';
 
 function App() {
   return (
@@ -50,6 +52,14 @@ function App() {
                 }
               />
             <Route path="*" element={<NotFound />} />
+            <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminPanel />
+                  </AdminRoute>
+                }
+              />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route 
