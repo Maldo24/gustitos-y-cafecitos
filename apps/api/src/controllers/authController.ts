@@ -38,7 +38,8 @@ export const authController = {
           username: user.username,
           names: user.names,
           firstSurname: user.firstSurname,
-          email: user.email
+          email: user.email,
+          role: user.role
         },
         accessToken
       });
@@ -72,7 +73,8 @@ export const authController = {
           username: user.username,
           names: user.names,
           firstSurname: user.firstSurname,
-          email: user.email
+          email: user.email,
+          role: user.role
         }
       });
     } catch (error: any) {

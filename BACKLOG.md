@@ -50,7 +50,10 @@ Endpoints disponibles: crear/sugerir restaurante (con detección de duplicados s
 ## 5. Módulo de Categorías
 
 - [x] Servicio `api/categories.ts` que llame `GET /api/categories` y `POST /api/categories` para poblar selects (restaurantes).
-- [ ] (Opcional, si hay panel admin) Formulario para crear categoría nueva (`POST /api/categories`).
+- [x] Categorías **pre-hechas** por defecto (12: Desayuno, Café, Almuerzo, Cena, Comida Rápida, Postres, Bebidas, Mexicana, Pizza, Sushi, Parrilla, Saludable) — se siembran al arrancar el backend (idempotente).
+- [x] Creación de categorías **solo para admin**: `POST /api/categories` protegido con `authenticateToken` + `requireAdmin`. El frontend solo muestra "+ Crear categoría nueva" si `user.role === "admin"`. El admin se crea al arrancar desde `ADMIN_USERNAME`/`ADMIN_PASSWORD`/`ADMIN_EMAIL` (y opcional `ADMIN_NAMES`).
+- [x] Normalización de nombres: trim, espacios simples, capitalización ("cafeteria" → "Cafeteria") y dedup por slug sin acentos/espacios (rechaza variantes de la misma categoría).
+- [ ] (Pendiente) Limpiar categorías históricas duplicadas en prod si el usuario las identifica (o dejar que el admin las re-cree).
 
 ## 6. Módulo de Sesiones / Dividir cuenta (UI implementada)
 
@@ -64,14 +67,14 @@ Endpoints disponibles: crear/sugerir restaurante (con detección de duplicados s
 
 ## 7. Componentes UI reutilizables faltantes
 
-- [ ] `Modal` / `Dialog` genérico (necesario para confirmaciones, "restaurante similar encontrado", crear grupo, etc.)
-- [ ] `Card` para restaurantes y grupos en listados.
-- [ ] `Select` / `Dropdown` (hoy solo existe `Input` de texto).
-- [ ] `Spinner` / estado de carga reutilizable.
-- [ ] `Toast` / `Alert` para reemplazar los `alert()` nativos usados en Login/Register.
-- [ ] `Badge` para votos / estado de pago.
-- [ ] Página **404** real con estilo (hoy es un `<h2>` plano) y layout consistente con el resto del sitio.
-- [ ] Componente de **error boundary** o manejo consistente de errores de red en toda la app.
+- [x] `Modal` / `Dialog` genérico (`components/Modal.tsx` — usado en WARNING_SIMILAR de restaurantes).
+- [x] `Card` para restaurantes y grupos en listados (`components/Card.tsx` — usado en Dashboard).
+- [x] `Select` / `Dropdown` (`components/Select.tsx` — usado en categorías y filtros).
+- [x] `Spinner` / estado de carga reutilizable (`components/Spinner.tsx` — usado en carga de grupos/restaurantes/cuentas).
+- [x] `Toast` / `Alert` para reemplazar los `alert()` nativos (`context/ToastContext.tsx` + `useToast()` — Register ya usa toast en vez de `alert`).
+- [x] `Badge` para votos / estado de pago (`components/Badge.tsx` — usado en categorías, pagos y progreso).
+- [x] Página **404** real con estilo (`pages/NotFound.tsx`, aplicada en `App.tsx`).
+- [x] Componente de **error boundary** (`components/ErrorBoundary.tsx`, envuelve la app en `App.tsx`).
 
 ## 8. Calidad general / pulido
 
@@ -91,4 +94,5 @@ Endpoints disponibles: crear/sugerir restaurante (con detección de duplicados s
 2. ~~Cerrar los cabos sueltos de grupos (sección 3)~~ ✅ completado (backend `my-groups` pendiente de redeploy).
 3. ~~Restaurantes (sección 4)~~ ✅ UI completa en la vista de grupo (backend login `id` pendiente de redeploy).
 4. ~~Sesiones/dividir cuenta (sección 6)~~ ✅ UI completa (`CreateSession`, `SessionDetail`, historial en grupo).
-5. Componentes UI + pulido general (secciones 7 y 8) — **siguiente**.
+5. ~~Componentes UI (sección 7)~~ ✅ `Modal`, `Card`, `Select`, `Spinner`, `Toast`, `Badge`, 404, ErrorBoundary.
+6. Pulido general (sección 8) — **siguiente**.

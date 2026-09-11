@@ -4,16 +4,21 @@ import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import { AuthProvider } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoutes';
+import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import GroupDetail from './pages/GroupDetail';
 import CreateSession from './pages/CreateSession';
 import SessionDetail from './pages/SessionDetail';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
     <BrowserRouter>
     <AuthProvider>
+    <ToastProvider>
+    <ErrorBoundary>
       <div className="h-screen flex flex-col bg-gray-50 text-gray-900 font-sans">
         <Navbar></Navbar>
 
@@ -44,7 +49,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-            <Route path="*" element={<h2>404 - No encontrado</h2>} />
+            <Route path="*" element={<NotFound />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route 
@@ -58,6 +63,8 @@ function App() {
           </Routes>
         </main>
       </div>
+    </ErrorBoundary>
+    </ToastProvider>
     </AuthProvider>
     </BrowserRouter>
   );

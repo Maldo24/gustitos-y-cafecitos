@@ -4,9 +4,11 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import Modal from "../components/Modal";
 import Select from "../components/Select";
+import Badge from "../components/Badge";
+import Spinner from "../components/Spinner";
 import { useAuth } from "../context/AuthContext";
 import { getGroupBySlug, getGroupMembers, addMember } from "../api/groups";
-import { getCategories } from "../api/categories";
+import { getCategories, createCategory } from "../api/categories";
 import { getSessionsByGroup } from "../api/sessions";
 import {
   createRestaurant,
@@ -51,6 +53,11 @@ function GroupDetail() {
   const [restComment, setRestComment] = useState("");
   const [restError, setRestError] = useState("");
   const [suggesting, setSuggesting] = useState(false);
+
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [categoryCreating, setCategoryCreating] = useState(false);
+  const [categoryError, setCategoryError] = useState("");
 
   const [categoryFilter, setCategoryFilter] = useState("");
   const [similarModal, setSimilarModal] = useState<{ message: string } | null>(null);
@@ -185,6 +192,24 @@ function GroupDetail() {
     }
   };
 
+  const handleCreateCategory = async () => {
+    setCategoryError("");
+    if (categoryCreating || newCategoryName.trim() === "") return;
+    setCategoryCreating(true);
+
+    try {
+      const result = await createCategory(newCategoryName.trim());
+      setCategories((prev) => [...prev, result.category]);
+      setRestCategoryId(result.category._id);
+      setNewCategoryName("");
+      setShowNewCategory(false);
+    } catch (err: unknown) {
+      setCategoryError(err instanceof Error ? err.message : "Error al crear la categoría.");
+    } finally {
+      setCategoryCreating(false);
+    }
+  };
+
   const handleVote = async (restaurantId: string) => {
     if (!group) return;
     try {
@@ -217,7 +242,11 @@ function GroupDetail() {
     : restaurants;
 
   if (loading) {
-    return <div className="p-6 max-w-4xl mx-auto h-full">Cargando grupo...</div>;
+    return (
+      <div className="p-6 max-w-4xl mx-auto h-full flex items-center justify-center">
+        <Spinner label="Cargando grupo..." />
+      </div>
+    );
   }
 
   if (error || !group) {
@@ -312,9 +341,11 @@ function GroupDetail() {
                           ${session.totalAmount.toFixed(2)} · {session.splitMode === "equal" ? "Partes iguales" : "Por consumo"}
                         </div>
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {paid}/{session.participants.length} pagaron
-                      </div>
+<div className="flex flex-col items-end gap-1">
+  <Badge color={paid === session.participants.length ? "green" : paid > 0 ? "butter" : "gray"}>
+    {paid}/{session.participants.length} {paid === 1 ? "pagó" : "pagaron"}
+  </Badge>
+</div>
                     </div>
                   </Link>
                 </li>
@@ -355,6 +386,37 @@ function GroupDetail() {
               onChange={(value) => setRestCategoryId(value)}
               options={categories.map((c) => ({ value: c._id, label: c.name }))}
             />
+            {user?.role === "admin" && !showNewCategory && (
+              <button
+                type="button"
+                onClick={() => setShowNewCategory(true)}
+                className="text-butter-500 font-bold text-sm hover:underline cursor-pointer self-start -mt-2"
+              >
+                + Crear categoría nueva
+              </button>
+            )}
+            {user?.role === "admin" && showNewCategory && (
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Input
+                      type="text"
+                      label="Nueva categoría"
+                      placeholder="Ej. Cafetería"
+                      value={newCategoryName}
+                      onChange={(value) => setNewCategoryName(value)}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleCreateCategory}
+                    disabled={categoryCreating || newCategoryName.trim() === ""}
+                  >
+                    {categoryCreating ? "Creando..." : "Crear"}
+                  </Button>
+                </div>
+                {categoryError && <p className="text-red-500 text-sm">{categoryError}</p>}
+              </div>
+            )}
             <Input
               type="text"
               label="Tu comentario inicial (obligatorio)"
@@ -384,7 +446,7 @@ function GroupDetail() {
           </div>
 
           {loading ? (
-            <p className="text-gray-500">Cargando restaurantes...</p>
+            <Spinner label="Cargando restaurantes..." />
           ) : restaurantsError ? (
             <p className="text-red-500 text-sm">{restaurantsError}</p>
           ) : filteredRestaurants.length === 0 ? (
@@ -408,9 +470,7 @@ function GroupDetail() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h5 className="text-xl font-bold text-gray-800">{restaurant.name}</h5>
-                          <span className="bg-butter-100 text-butter-700 text-xs font-bold px-2 py-1 rounded-full">
-                            {getCategoryName(restaurant.categoryId)}
-                          </span>
+                          <Badge color="butter">{getCategoryName(restaurant.categoryId)}</Badge>
                         </div>
                         <a
                           href={restaurant.mapsLink}

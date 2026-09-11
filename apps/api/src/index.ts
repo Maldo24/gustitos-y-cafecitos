@@ -2,11 +2,14 @@ import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 import categoryRoutes from './routes/categoryRoutes.js';
 import restaurantRoutes from './routes/restaurantRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import { categoryService } from './services/categoryService.js';
+import { User } from './models/User.js';
 dotenv.config();
 
 const app: Application = express();
@@ -51,10 +54,47 @@ const initializeDatabase = async (): Promise<void> => {
 };
 
 /**
+ * Siembra datos iniciales (categorias pre-hechas y usuario admin)
+ */
+const seedInitialData = async (): Promise<void> => {
+  try {
+    // Categorias pre-definidas
+    await categoryService.seedDefaultCategories();
+    console.log('Default categories seeded.');
+
+    // Usuario admin desde variables de entorno
+    const adminUsername = process.env.ADMIN_USERNAME;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminUsername && adminPassword) {
+      const cleanAdminUsername = adminUsername.replace(/\s+/g, "").trim();
+      const existingAdmin = await User.findOne({ username: cleanAdminUsername });
+      if (!existingAdmin) {
+        const adminHash = await bcrypt.hash(adminPassword, 10);
+        await User.create({
+          username: cleanAdminUsername,
+          passwordHash: adminHash,
+          names: process.env.ADMIN_NAMES || 'Administrador',
+          firstSurname: 'Sistema',
+          email: adminEmail || `${cleanAdminUsername}@gustitos-admin.local`,
+          role: 'admin'
+        });
+        console.log(`Admin user '${cleanAdminUsername}' created.`);
+      } else {
+        console.log(`Admin user '${cleanAdminUsername}' already exists.`);
+      }
+    }
+  } catch (error) {
+    console.error('Error seeding initial data:', error);
+  }
+};
+
+/**
  * Arranca la aplicacion Express
  */
 const startServer = async (): Promise<void> => {
   await initializeDatabase();
+  await seedInitialData();
 
   const server = app.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
