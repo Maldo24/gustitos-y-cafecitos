@@ -25,6 +25,14 @@ function Navbar() {
             >
               Mis Grupos
             </Link>
+            {user.role === "admin" && (
+              <Link
+                to="/admin"
+                className="text-butter-100 font-bold hover:underline transition-opacity"
+              >
+                Admin
+              </Link>
+            )}
             <Button 
               onClick={handleLogout}
             >

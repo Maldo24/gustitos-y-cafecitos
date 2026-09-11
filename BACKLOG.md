@@ -55,6 +55,19 @@ Endpoints disponibles: crear/sugerir restaurante (con detección de duplicados s
 - [x] Normalización de nombres: trim, espacios simples, capitalización ("cafeteria" → "Cafeteria") y dedup por slug sin acentos/espacios (rechaza variantes de la misma categoría).
 - [ ] (Pendiente) Limpiar categorías históricas duplicadas en prod si el usuario las identifica (o dejar que el admin las re-cree).
 
+## 9. Panel de administración (solo rol `admin`)
+
+- [x] Backend: endpoints admin protegidos (`/api/admin/*`) con `authenticateToken` + `requireAdmin` (`adminRoutes.ts`):
+  - `GET /api/admin/stats` — conteos: usuarios, grupos, restaurantes, cuentas, pagos realizados.
+  - `GET /api/admin/users` — listar usuarios (username, email, nombres, rol, fecha).
+  - `PATCH /api/admin/users/:id/role` — cambiar rol (`admin`/`user`); bloquea que un admin se quite su propio rol.
+  - `GET /api/admin/groups` — listar todos los grupos (miembros y restaurantes populados).
+- [x] Backend: CRUD completo de categorías con admin: `POST /api/categories`, `PUT /api/categories/:id`, `DELETE /api/categories/:id` (antes solo POST existía).
+- [x] Frontend: capa `api/admin.ts` + CRUD de categorías en `api/categories.ts`.
+- [x] Página `/admin` (`pages/AdminPanel.tsx`) protegida con `AdminRoute` (requiere rol admin; redirige a `/dashboard` si no) con 4 secciones: estadísticas, categorías (crear/editar/eliminar con modales), usuarios (cambiar rol con badge) y grupos (listado con link al grupo).
+- [x] Navbar: link "Admin" visible solo si `user.role === "admin"`.
+- [x] El admin se alimenta de las env vars `ADMIN_USERNAME`/`ADMIN_PASSWORD`/`ADMIN_EMAIL` — configurarlos en Render para el deploy.
+
 ## 6. Módulo de Sesiones / Dividir cuenta (UI implementada)
 
 - [x] Página **"Nueva cuenta compartida"** (`/grupo/:slug/nueva-cuenta`): título, modo de split (`equal` vs `by_consumption`), propina (%), lista dinámica de participantes (`pages/CreateSession.tsx`).
@@ -95,4 +108,5 @@ Endpoints disponibles: crear/sugerir restaurante (con detección de duplicados s
 3. ~~Restaurantes (sección 4)~~ ✅ UI completa en la vista de grupo (backend login `id` pendiente de redeploy).
 4. ~~Sesiones/dividir cuenta (sección 6)~~ ✅ UI completa (`CreateSession`, `SessionDetail`, historial en grupo).
 5. ~~Componentes UI (sección 7)~~ ✅ `Modal`, `Card`, `Select`, `Spinner`, `Toast`, `Badge`, 404, ErrorBoundary.
-6. Pulido general (sección 8) — **siguiente**.
+6. ~~Panel de administración (sección 9)~~ ✅ `/admin`: stats, categorías CRUD, usuarios-rol, grupos. Requiere redeploy + env vars admin.
+7. Pulido general (sección 8) — **siguiente**.
