@@ -1,11 +1,16 @@
 import { apiClient } from './client';
-import type { Session, SessionParticipant } from '../types';
+import type { Session } from '../types';
+
+export interface CreateSessionParticipant {
+  name: string;
+  itemsConsumed: { dishName: string; price: number; quantity: number }[];
+}
 
 export interface CreateSessionPayload {
   title: string;
   splitMode: 'equal' | 'by_consumption';
   tipPercentage?: number;
-  participants: SessionParticipant[];
+  participants: CreateSessionParticipant[];
   groupId?: string;
 }
 

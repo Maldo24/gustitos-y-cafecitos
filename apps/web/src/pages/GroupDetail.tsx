@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import Button from "../components/Button";
 import Input from "../components/Input";
 import Modal from "../components/Modal";
@@ -7,6 +7,7 @@ import Select from "../components/Select";
 import { useAuth } from "../context/AuthContext";
 import { getGroupBySlug, getGroupMembers, addMember } from "../api/groups";
 import { getCategories } from "../api/categories";
+import { getSessionsByGroup } from "../api/sessions";
 import {
   createRestaurant,
   getRestaurantsByGroup,
@@ -14,7 +15,7 @@ import {
   toggleVote,
   type CreateRestaurantPayload,
 } from "../api/restaurants";
-import type { Category, Group, Restaurant, User } from "../types";
+import type { Category, Group, Restaurant, Session, User } from "../types";
 
 function getCategoryName(category: string | Category): string {
   return typeof category === "string" ? category : category.name;
@@ -27,11 +28,13 @@ function getCategoryId(category: string | Category): string {
 function GroupDetail() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [sessions, setSessions] = useState<Session[]>([]);
 
   const [friendUsername, setFriendUsername] = useState("");
   const [adding, setAdding] = useState(false);
@@ -67,12 +70,14 @@ function GroupDetail() {
           getGroupMembers(data._id),
           getRestaurantsByGroup(data._id),
           getCategories(),
+          getSessionsByGroup(data._id),
         ]);
       })
-      .then(([membersData, restaurantsData, categoriesData]) => {
+      .then(([membersData, restaurantsData, categoriesData, sessionsData]) => {
         setMembers(membersData);
         setRestaurants(restaurantsData);
         setCategories(categoriesData);
+        setSessions(sessionsData);
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "Error al cargar el grupo.");
@@ -271,6 +276,52 @@ function GroupDetail() {
             {adding ? "Agregando..." : "Agregar amigo"}
           </Button>
         </form>
+      </div>
+
+      <hr className="my-8 border-butter-200" />
+
+      <div className="mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+          <div>
+            <h3 className="text-3xl font-bold text-gray-800 mb-2">Cuentas compartidas</h3>
+            <p className="text-gray-600">Divide la cuenta de una salida con los participantes.</p>
+          </div>
+          <Button onClick={() => navigate(`/grupo/${slug}/nueva-cuenta`)}>
+            + Nueva cuenta
+          </Button>
+        </div>
+
+        {sessions.length === 0 ? (
+          <p className="text-gray-500">
+            Todavía no hay cuentas divididas en este grupo. ¡Crea la primera!
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {sessions.map((session) => {
+              const paid = session.participants.filter((p) => p.isPaid).length;
+              return (
+                <li key={session._id}>
+                  <Link
+                    to={`/cuenta/${session._id}`}
+                    className="block bg-white p-4 rounded-xl shadow-md border border-butter-200 hover:shadow-lg transition-shadow"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-bold text-gray-800">{session.title}</div>
+                        <div className="text-sm text-gray-500">
+                          ${session.totalAmount.toFixed(2)} · {session.splitMode === "equal" ? "Partes iguales" : "Por consumo"}
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {paid}/{session.participants.length} pagaron
+                      </div>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       <hr className="my-8 border-butter-200" />

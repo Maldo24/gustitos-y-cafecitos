@@ -7,6 +7,8 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoutes';
 import Dashboard from './pages/Dashboard';
 import GroupDetail from './pages/GroupDetail';
+import CreateSession from './pages/CreateSession';
+import SessionDetail from './pages/SessionDetail';
 
 function App() {
   return (
@@ -25,6 +27,22 @@ function App() {
                     <GroupDetail />
                   </ProtectedRoute>
                 } 
+              />
+            <Route
+                path="/grupo/:slug/nueva-cuenta"
+                element={
+                  <ProtectedRoute>
+                    <CreateSession />
+                  </ProtectedRoute>
+                }
+              />
+            <Route
+                path="/cuenta/:sessionId"
+                element={
+                  <ProtectedRoute>
+                    <SessionDetail />
+                  </ProtectedRoute>
+                }
               />
             <Route path="*" element={<h2>404 - No encontrado</h2>} />
             <Route path="/login" element={<Login />} />
