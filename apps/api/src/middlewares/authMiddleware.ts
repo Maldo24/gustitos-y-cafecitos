@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { User } from '../models/User.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_para_desarrollo';
 
@@ -25,5 +26,26 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     next();
   } catch (error) {
     res.status(403).json({ error: 'Token invalido o expirado.' });
+  }
+};
+
+export const requireAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = (req as any).user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ error: 'No autenticado' });
+      return;
+    }
+
+    const user = await User.findById(userId);
+    if (!user || user.role !== 'admin') {
+      res.status(403).json({ error: 'Acceso denegado. Solo administradores.' });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    res.status(500).json({ error: 'Error al verificar permisos de administrador.' });
   }
 };

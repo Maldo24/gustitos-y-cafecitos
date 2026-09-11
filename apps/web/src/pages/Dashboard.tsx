@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 import Input from "../components/Input";
+import Card from "../components/Card";
+import Spinner from "../components/Spinner";
 import { createGroup, getGroupBySlug, getMyGroups } from "../api/groups";
 import type { Group } from "../types";
 
@@ -74,7 +76,7 @@ function Dashboard() {
       {formError && <p className="text-red-500 text-sm mb-4">{formError}</p>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-xl shadow-md border border-butter-200 flex flex-col">
+        <Card className="p-8 flex flex-col">
           <h3 className="text-2xl font-bold text-gray-800 mb-4">Crear un Grupo</h3>
           <p className="text-gray-600 mb-6 flex-1">
             Inicia una nueva salida con tus amigos. Podrán sugerir restaurantes y dividir la cuenta fácilmente.
@@ -91,8 +93,8 @@ function Dashboard() {
               {creating ? "Creando..." : "Crear Nuevo Grupo"}
             </Button>
           </form>
-        </div>
-        <div className="bg-white p-8 rounded-xl shadow-md border border-butter-200 flex flex-col">
+        </Card>
+        <Card className="p-8 flex flex-col">
           <h3 className="text-2xl font-bold text-gray-800 mb-4">Unirse con Código</h3>
           <p className="text-gray-600 mb-6 flex-1">
             ¿Tus amigos ya crearon el grupo? Pídeles el código secreto (slug) e ingrésalo aquí para unirte.
@@ -109,13 +111,13 @@ function Dashboard() {
               {joining ? "Buscando..." : "Ir al Grupo"}
             </Button>
           </form>
-        </div>
+        </Card>
       </div>
 
       <div className="mt-10">
         <h3 className="text-2xl font-bold text-gray-800 mb-4">Tus grupos existentes</h3>
         {loadingGroups ? (
-          <p className="text-gray-500">Cargando grupos...</p>
+          <Spinner label="Cargando tus grupos..." />
         ) : loadError ? (
           <p className="text-red-500 text-sm">{loadError}</p>
         ) : groups.length === 0 ? (

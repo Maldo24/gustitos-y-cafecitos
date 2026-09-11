@@ -22,6 +22,7 @@ interface LoginResponse {
     names: string;
     firstSurname: string;
     email: string;
+    role?: 'admin' | 'user';
   };
   accessToken: string;
 }
@@ -34,6 +35,7 @@ interface MeResponse {
     names: string;
     firstSurname: string;
     email: string;
+    role?: 'admin' | 'user';
   };
 }
 

@@ -9,7 +9,12 @@ export const authService = {
    * Registra un nuevo usuario encriptando su contraseña.
    */
   async registerUser(username: string, password: string, names: string, firstSurname: string, email: string): Promise<IUser> {
-    const usernameExists = await User.findOne({ username });
+    const cleanUsername = username.replace(/\s+/g, "").trim();
+    if (!/^[a-zA-Z0-9]{3,20}$/.test(cleanUsername)) {
+      throw new Error('El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras y numeros');
+    }
+
+    const usernameExists = await User.findOne({ username: cleanUsername });
     if (usernameExists) throw new Error('El nombre de usuario ya esta en uso');
 
     const emailExists = await User.findOne({ email });
@@ -19,7 +24,7 @@ export const authService = {
     const passwordHash = await bcrypt.hash(password, 10);
 
     const newUser = new User({
-      username,
+      username: cleanUsername,
       passwordHash,
       names,
       firstSurname,
@@ -33,7 +38,8 @@ export const authService = {
    * Valida las credenciales de inicio de sesión y genera un token JWT.
    */
   async loginUser(username: string, password: string): Promise<{ user: IUser; accessToken: string }> {
-    const user = await User.findOne({ username });
+    const cleanUsername = username.replace(/\s+/g, "").trim();
+    const user = await User.findOne({ username: cleanUsername });
     if (!user) throw new Error('Usuario o contrasena incorrectos');
 
     // Comparar la contraseña ingresada con el hash guardado

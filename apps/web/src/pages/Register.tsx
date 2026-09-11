@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import { register } from "../api/auth";
 import Input from "../components/Input";
+import { useToast } from "../context/ToastContext";
 
 function Register() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     username: "",
     names: "",
@@ -39,7 +41,7 @@ function Register() {
     try {
       // Llamada real al backend
       await register(formData);
-      alert("¡Usuario registrado correctamente!");
+      showToast("¡Usuario registrado correctamente!");
       navigate("/login");
     } catch (err: unknown) {
       if (err instanceof Error) {

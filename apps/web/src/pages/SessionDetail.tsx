@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Button from "../components/Button";
+import Badge from "../components/Badge";
+import Spinner from "../components/Spinner";
 import { getSessionById, togglePayment } from "../api/sessions";
 import type { Session } from "../types";
 
@@ -47,7 +49,11 @@ function SessionDetail() {
   };
 
   if (loading) {
-    return <div className="p-6 max-w-4xl mx-auto h-full">Cargando cuenta...</div>;
+    return (
+      <div className="p-6 max-w-4xl mx-auto h-full flex items-center justify-center">
+        <Spinner label="Cargando cuenta..." />
+      </div>
+    );
   }
 
   if (error || !session) {
@@ -122,13 +128,9 @@ function SessionDetail() {
                   ${participant.finalPay.toFixed(2)}
                 </span>
                 {participant.isPaid ? (
-                  <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">
-                    Pagado
-                  </span>
+                  <Badge color="green">Pagado</Badge>
                 ) : (
-                  <span className="bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-full">
-                    Pendiente
-                  </span>
+                  <Badge color="red">Pendiente</Badge>
                 )}
                 <Button
                   onClick={() => participant._id && handleTogglePay(participant._id)}
