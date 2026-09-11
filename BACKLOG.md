@@ -52,17 +52,15 @@ Endpoints disponibles: crear/sugerir restaurante (con detección de duplicados s
 - [x] Servicio `api/categories.ts` que llame `GET /api/categories` y `POST /api/categories` para poblar selects (restaurantes).
 - [ ] (Opcional, si hay panel admin) Formulario para crear categoría nueva (`POST /api/categories`).
 
-## 6. Módulo de Sesiones / Dividir cuenta (feature principal, sin ninguna UI)
+## 6. Módulo de Sesiones / Dividir cuenta (UI implementada)
 
-Este es probablemente el corazón de la app ("cafecitos" → dividir la cuenta) y no tiene absolutamente nada construido en frontend.
-
-- [ ] Página **"Nueva cuenta compartida"**: título, modo de split (`equal` vs `by_consumption`), propina (%), lista dinámica de participantes.
-- [ ] Si `splitMode = by_consumption`: UI para que cada participante agregue sus platos consumidos (nombre, precio, cantidad) — probablemente reutilizando datos de `Dish` si se listan platos del restaurante, o input libre.
-- [ ] Cálculo/preview del monto final por participante antes de guardar (o confiar en que el backend lo calcula al hacer `POST /api/sessions`).
-- [ ] Página de **historial de cuentas de un grupo** (`GET /api/sessions/group/:groupId`).
-- [ ] Página de **detalle de una cuenta** (`GET /api/sessions/:sessionId`): desglose por participante, total, propina, estado de pago.
-- [ ] Toggle de **"marcar como pagado"** por participante (`PUT /api/sessions/:sessionId/participant/:participantId/pay`).
-- [ ] Indicador visual de progreso de pagos (ej. "3 de 5 pagaron").
+- [x] Página **"Nueva cuenta compartida"** (`/grupo/:slug/nueva-cuenta`): título, modo de split (`equal` vs `by_consumption`), propina (%), lista dinámica de participantes (`pages/CreateSession.tsx`).
+- [x] Si `splitMode = by_consumption`: UI para que cada participante agregue sus platos consumidos (nombre, precio, cantidad).
+- [x] Cálculo/preview del monto final por participante antes de guardar (replica la lógica del backend).
+- [x] Página de **historial de cuentas de un grupo** (`GET /api/sessions/group/:groupId`) — integrado en `GroupDetail.tsx` con botón "+ Nueva cuenta".
+- [x] Página de **detalle de una cuenta** (`/cuenta/:sessionId` en `pages/SessionDetail.tsx`): desglose por participante, total, propina, estado de pago.
+- [x] Toggle de **"marcar como pagado"** por participante (`PUT /api/sessions/:sessionId/participant/:participantId/pay`).
+- [x] Indicador visual de progreso de pagos (ej. "3 de 5 pagaron" + barra de progreso).
 
 ## 7. Componentes UI reutilizables faltantes
 
@@ -92,5 +90,5 @@ Este es probablemente el corazón de la app ("cafecitos" → dividir la cuenta) 
 1. ~~Infraestructura base (sección 1)~~ ✅ completada.
 2. ~~Cerrar los cabos sueltos de grupos (sección 3)~~ ✅ completado (backend `my-groups` pendiente de redeploy).
 3. ~~Restaurantes (sección 4)~~ ✅ UI completa en la vista de grupo (backend login `id` pendiente de redeploy).
-4. Sesiones/dividir cuenta (sección 6) — **siguiente**: la feature más grande y todavía sin ningún avance.
-5. Componentes UI + pulido general (secciones 7 y 8) en paralelo conforme se van necesitando.
+4. ~~Sesiones/dividir cuenta (sección 6)~~ ✅ UI completa (`CreateSession`, `SessionDetail`, historial en grupo).
+5. Componentes UI + pulido general (secciones 7 y 8) — **siguiente**.
