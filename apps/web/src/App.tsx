@@ -17,7 +17,7 @@ import AdminRoute from './components/AdminRoute';
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
     <AuthProvider>
     <ToastProvider>
     <ErrorBoundary>
