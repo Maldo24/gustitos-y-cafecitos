@@ -9,9 +9,17 @@ export const authService = {
    * Registra un nuevo usuario encriptando su contraseña.
    */
   async registerUser(username: string, password: string, names: string, firstSurname: string, email: string): Promise<IUser> {
-    const cleanUsername = username.replace(/\s+/g, "").trim();
+    const cleanUsername = username.trim();
     if (!/^[a-zA-Z0-9]{3,20}$/.test(cleanUsername)) {
       throw new Error('El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras y numeros');
+    }
+
+    if (/\s/.test(password)) {
+      throw new Error('La contraseña no puede contener espacios');
+    }
+
+    if (!/^(?=.*[0-9])(?=.*[a-zA-Z])[a-zA-Z0-9]{8,}$/.test(password)) {
+      throw new Error('La contraseña debe tener al menos 8 caracteres y debe contener al menos un numero y una letra');
     }
 
     const usernameExists = await User.findOne({ username: cleanUsername });
@@ -38,7 +46,7 @@ export const authService = {
    * Valida las credenciales de inicio de sesión y genera un token JWT.
    */
   async loginUser(username: string, password: string): Promise<{ user: IUser; accessToken: string }> {
-    const cleanUsername = username.replace(/\s+/g, "").trim();
+    const cleanUsername = username.trim();
     const user = await User.findOne({ username: cleanUsername });
     if (!user) throw new Error('Usuario o contrasena incorrectos');
 

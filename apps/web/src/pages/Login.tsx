@@ -20,7 +20,7 @@ function Login() {
     setLoading(true);
     
     try {
-      const cleanUsername = username.replace(/\s+/g, "").trim();
+      const cleanUsername = username.trim();
       const response = await login(cleanUsername, password);
       
       loginContext(response.user, response.accessToken);

@@ -9,8 +9,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Recetitas App',
-        short_name: 'Recetitas',
+        name: 'Gustitos y Cafecitos',
+        short_name: 'Gustitos',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',

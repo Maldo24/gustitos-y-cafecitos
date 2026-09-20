@@ -112,7 +112,7 @@ function GroupDetail() {
 
   const handleCopyLink = async () => {
     if (!group) return;
-    const link = `${window.location.origin}/grupo/${group.slug}`;
+    const link = `${window.location.origin}${import.meta.env.BASE_URL}grupo/${group.slug}`;
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
@@ -282,7 +282,7 @@ function GroupDetail() {
               >
                 <div>
                   <div className="font-bold text-gray-800">
-                    {member.names} {member.firtsSurname}{" "}
+                    {member.names} {member.firstSurname}{" "}
                     <span className="text-gray-400 font-normal">@{member.username}</span>
                   </div>
                 </div>

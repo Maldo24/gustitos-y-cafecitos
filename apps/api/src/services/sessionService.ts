@@ -10,7 +10,27 @@ export const sessionService = {
     participants: ISessionParticipant[],
     groupId?: string
   ): Promise<ISession> {
-    
+
+    if (!Array.isArray(participants) || participants.length === 0) {
+      throw new Error('Se requiere al menos un participante');
+    }
+
+    if (tipPercentage < 0) {
+      throw new Error('La propina no puede ser negativa');
+    }
+
+    if (tipPercentage > 100) {
+      throw new Error('La propina no puede superar el 100%');
+    }
+
+    for (const p of participants) {
+      for (const item of p.itemsConsumed) {
+        if (item.price < 0 || item.quantity < 0) {
+          throw new Error('Los precios y cantidades no pueden ser negativos');
+        }
+      }
+    }
+
     if (groupId) {
       const groupExists = await Group.findById(groupId);
       if (!groupExists) throw new Error('El grupo especificado no existe');

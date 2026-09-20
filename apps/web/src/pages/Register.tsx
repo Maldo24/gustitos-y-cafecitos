@@ -23,15 +23,27 @@ function Register() {
     setError("");
     if (loading) return;
 
+    const cleanedData = {
+      username: formData.username.trim(),
+      names: formData.names.trim(),
+      firstSurname: formData.firstSurname.trim(),
+      email: formData.email.trim(),
+      password: formData.password,
+    };
+
     const usernameRegex = /^[a-zA-Z0-9]{3,20}$/;
-    if(!usernameRegex.test(formData.username)){
+    if(!usernameRegex.test(cleanedData.username)){
       setError("El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras y numeros.");
       return;
     }
 
+    if (cleanedData.password.includes(" ")) {
+      setError("La contraseña no puede contener espacios.");
+      return;
+    }
 
     const passwordRegex =  /^(?=.*[0-9])(?=.*[a-zA-Z])[a-zA-Z0-9]{8,}$/ ;
-    if(!passwordRegex.test(formData.password)){
+    if(!passwordRegex.test(cleanedData.password)){
       setError("La contrasena debe tener al menos 8 carcteres y contener al menos un numero y una letra.");
       return;
     }
@@ -40,7 +52,7 @@ function Register() {
 
     try {
       // Llamada real al backend
-      await register(formData);
+      await register(cleanedData);
       showToast("¡Usuario registrado correctamente!");
       navigate("/login");
     } catch (err: unknown) {

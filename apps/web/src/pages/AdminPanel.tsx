@@ -218,7 +218,7 @@ function AdminPanel() {
             <li key={usr._id} className="flex items-center justify-between gap-2 border-b border-gray-100 pb-2">
               <div>
                 <div className="font-semibold text-gray-800">
-                  {usr.names} {usr.firtsSurname}
+                  {usr.names} {usr.firstSurname}
                 </div>
                 <div className="text-sm text-gray-500">
                   @{usr.username} · {usr.email}
