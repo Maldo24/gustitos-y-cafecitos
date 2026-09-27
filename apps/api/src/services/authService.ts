@@ -18,8 +18,8 @@ export const authService = {
       throw new Error('La contraseña no puede contener espacios');
     }
 
-    if (!/^(?=.*[0-9])(?=.*[a-zA-Z])[a-zA-Z0-9]{8,}$/.test(password)) {
-      throw new Error('La contraseña debe tener al menos 8 caracteres y debe contener al menos un numero y una letra');
+    if (password.length < 6) {
+      throw new Error('La contraseña debe tener al menos 6 caracteres');
     }
 
     const usernameExists = await User.findOne({ username: cleanUsername });

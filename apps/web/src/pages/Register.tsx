@@ -5,6 +5,15 @@ import { register } from "../api/auth";
 import Input from "../components/Input";
 import { useToast } from "../context/ToastContext";
 
+interface FieldErrors {
+  username?: string;
+  names?: string;
+  firstSurname?: string;
+  email?: string;
+  password?: string;
+  general?: string;
+}
+
 function Register() {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -15,12 +24,21 @@ function Register() {
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
+
+  const clearFieldError = (field: keyof FieldErrors) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setErrors({});
     if (loading) return;
 
     const cleanedData = {
@@ -31,35 +49,64 @@ function Register() {
       password: formData.password,
     };
 
+    const fieldErrors: FieldErrors = {};
+
     const usernameRegex = /^[a-zA-Z0-9]{3,20}$/;
-    if(!usernameRegex.test(cleanedData.username)){
-      setError("El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras y numeros.");
-      return;
+    if (!usernameRegex.test(cleanedData.username)) {
+      fieldErrors.username = "El nombre de usuario debe tener entre 3 y 20 caracteres y solo puede contener letras y numeros.";
+    }
+
+    const nameRegex = /^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ ]+$/;
+    if (!cleanedData.names) {
+      fieldErrors.names = "Ingresa tus nombres.";
+    } else if (!nameRegex.test(cleanedData.names)) {
+      fieldErrors.names = "Los nombres no pueden contener numeros ni caracteres especiales.";
+    }
+
+    if (!cleanedData.firstSurname) {
+      fieldErrors.firstSurname = "Ingresa tu primer apellido.";
+    } else if (!nameRegex.test(cleanedData.firstSurname)) {
+      fieldErrors.firstSurname = "El apellido no puede contener numeros ni caracteres especiales.";
+    }
+
+    const emailRegex = /^\S+@\S+\.\S+$/;
+    if (!cleanedData.email) {
+      fieldErrors.email = "Ingresa tu correo electronico.";
+    } else if (!emailRegex.test(cleanedData.email)) {
+      fieldErrors.email = "Ingresa un correo valido. Ej: nombre@dominio.com";
     }
 
     if (cleanedData.password.includes(" ")) {
-      setError("La contraseña no puede contener espacios.");
-      return;
+      fieldErrors.password = "La contraseña no puede contener espacios.";
+    } else if (cleanedData.password.length < 6) {
+      fieldErrors.password = "La contraseña debe tener al menos 6 caracteres.";
     }
 
-    const passwordRegex =  /^(?=.*[0-9])(?=.*[a-zA-Z])[a-zA-Z0-9]{8,}$/ ;
-    if(!passwordRegex.test(cleanedData.password)){
-      setError("La contrasena debe tener al menos 8 carcteres y contener al menos un numero y una letra.");
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
       return;
     }
 
     setLoading(true);
 
     try {
-      // Llamada real al backend
       await register(cleanedData);
       showToast("¡Usuario registrado correctamente!");
       navigate("/login");
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Ocurrió un error inesperado al registrarse.";
+      const lowered = message.toLowerCase();
+      if (lowered.includes("usuario")) {
+        setErrors((prev) => ({ ...prev, username: message }));
+      } else if (lowered.includes("correo")) {
+        setErrors((prev) => ({ ...prev, email: message }));
+      } else if (lowered.includes("contraseña") || lowered.includes("contrasena")) {
+        setErrors((prev) => ({ ...prev, password: message }));
       } else {
-        setError("Ocurrió un error inesperado al registrarse.");
+        setErrors((prev) => ({ ...prev, general: message }));
       }
     } finally {
       setLoading(false);
@@ -76,25 +123,27 @@ function Register() {
         />
       </div>
 
-      <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-4 h-full">
+      <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-4 h-full overflow-y-auto">
           <h2 className="text-4xl font-bold mb-4 text-center">
             Crear Cuenta
           </h2>
 
-          {error && (
-            <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+          {errors.general && (
+            <p className="text-red-500 text-sm mb-4 text-center">{errors.general}</p>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3 w-full max-w-sm">
             <div>
               <Input
                 label="Nombres"
                 type="text"
                 placeholder="Juan"
                 value={formData.names}
-                onChange={(value) =>
-                  setFormData({ ...formData, names: value })
-                }
+                error={errors.names}
+                onChange={(value) => {
+                  setFormData({ ...formData, names: value });
+                  clearFieldError("names");
+                }}
               />
             </div>
             <div>
@@ -103,9 +152,11 @@ function Register() {
                 type="text"
                 placeholder="Perez"
                 value={formData.firstSurname}
-                onChange={(value) =>
-                  setFormData({ ...formData, firstSurname: value })
-                }
+                error={errors.firstSurname}
+                onChange={(value) => {
+                  setFormData({ ...formData, firstSurname: value });
+                  clearFieldError("firstSurname");
+                }}
               />
             </div>
             <div>
@@ -114,9 +165,11 @@ function Register() {
                 type="text"
                 placeholder="juanito123"
                 value={formData.username}
-                onChange={(value) =>
-                  setFormData({ ...formData, username: value })
-                }
+                error={errors.username}
+                onChange={(value) => {
+                  setFormData({ ...formData, username: value });
+                  clearFieldError("username");
+                }}
               />
             </div>
             <div>
@@ -125,7 +178,11 @@ function Register() {
                 type="email"
                 placeholder="juanito123@gmail.com"
                 value={formData.email}
-                onChange={(value) => setFormData({ ...formData, email: value })}
+                error={errors.email}
+                onChange={(value) => {
+                  setFormData({ ...formData, email: value });
+                  clearFieldError("email");
+                }}
               />
             </div>
             <div>
@@ -134,9 +191,11 @@ function Register() {
                 type="password"
                 placeholder="********"
                 value={formData.password}
-                onChange={(value) =>
-                  setFormData({ ...formData, password: value })
-                }
+                error={errors.password}
+                onChange={(value) => {
+                  setFormData({ ...formData, password: value });
+                  clearFieldError("password");
+                }}
               />
             </div>
 

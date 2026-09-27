@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-function Input({ label, type, value, placeholder, onChange }: 
-    { label: string; type: string; value: string; placeholder:string, onChange: (value: string) => void }) {
+function Input({ label, type, value, placeholder, onChange, error }: 
+    { label: string; type: string; value: string; placeholder:string, onChange: (value: string) => void, error?: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
   const inputType = isPassword && showPassword ? "text" : type;
@@ -12,7 +12,6 @@ function Input({ label, type, value, placeholder, onChange }:
       <div className="relative">
         <input
           type={inputType}
-          required
           className="w-full px-3 py-2 bg-white border border-butter-300 rounded focus:outline-none focus:ring-2 focus:ring-butter-400"
           placeholder={placeholder}
           value={value}
@@ -38,6 +37,7 @@ function Input({ label, type, value, placeholder, onChange }:
           </button>
         )}
       </div>
+      {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
     </div>
   );
 }

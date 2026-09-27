@@ -94,6 +94,27 @@ export const groupController = {
       res.status(500).json({ error: error.message });
     }
   },
+  async join(req: Request, res: Response): Promise<void> {
+    try {
+      const { groupId } = req.params;
+      const userId = (req as any).user?.userId;
+
+      if (typeof groupId !== 'string') {
+        res.status(400).json({ error: 'El ID del grupo es requerido' });
+        return;
+      }
+
+      if (!userId) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
+      }
+
+      const group = await groupService.joinGroup(groupId, userId);
+      res.status(200).json({ message: 'Te uniste al grupo con exito', group });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  },
   async getMembers(req: Request, res: Response): Promise<void> {
     try {
       const { groupId } = req.params;

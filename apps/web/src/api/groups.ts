@@ -34,3 +34,11 @@ export async function addMember(
     body: JSON.stringify({ username }),
   });
 }
+
+export async function joinGroup(
+  groupId: string
+): Promise<{ message: string; group: Group }> {
+  return apiClient<{ message: string; group: Group }>(`/groups/${groupId}/join`, {
+    method: 'POST',
+  });
+}

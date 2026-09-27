@@ -97,6 +97,30 @@ export const groupService = {
         
         return group;
     }, 
+    // Agregamos el usuario actual al grupo (unirse)
+    async joinGroup(groupId: string, userId: string): Promise<IGroup> {
+        const userExists = await User.findById(userId);
+        if (!userExists) {
+            throw new Error('El usuario no existe');
+        }
+
+        const group = await Group.findById(groupId);
+        if (!group) {
+            throw new Error('El grupo no existe');
+        }
+
+        const isAlreadyMember = group.members.some(
+            (memberId) => memberId.toString() === userId.toString()
+        );
+
+        if (isAlreadyMember) {
+            throw new Error('Ya eres miembro de este grupo');
+        }
+
+        group.members.push(userExists._id);
+        return await group.save();
+    },
+
     // Buscamos todos los grupos donde el array 'members' contenga el ID del usuario
     async getGroupsByUser(userId: string) {
         const groups = await Group.find({ members: userId })

@@ -16,8 +16,11 @@ router.get('/:slug', groupController.getBySlug);
 // POST /api/groups/:slug/restaurants - Añadir un restaurante sugerido al grupo
 router.post('/:slug/restaurants', groupController.suggestRestaurant);
 
-// POST /api/groups/:groupId/members
+// POST /api/groups/:groupId/members - Agregar un amigo al grupo por username
 router.post('/:groupId/members', groupController.addMember);
+
+// POST /api/groups/:groupId/join - Unirse al grupo con el usuario autenticado
+router.post('/:groupId/join', authenticateToken, groupController.join);
 
 // GET /api/groups/:groupId/members - Obtener la lista de miembros de un grupo
 router.get('/:groupId/members', groupController.getMembers);

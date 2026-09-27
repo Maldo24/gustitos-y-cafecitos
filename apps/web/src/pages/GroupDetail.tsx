@@ -7,7 +7,7 @@ import Select from "../components/Select";
 import Badge from "../components/Badge";
 import Spinner from "../components/Spinner";
 import { useAuth } from "../context/AuthContext";
-import { getGroupBySlug, getGroupMembers, addMember } from "../api/groups";
+import { getGroupBySlug, getGroupMembers, addMember, joinGroup } from "../api/groups";
 import { getCategories, createCategory } from "../api/categories";
 import { getSessionsByGroup } from "../api/sessions";
 import {
@@ -78,19 +78,27 @@ function GroupDetail() {
           getRestaurantsByGroup(data._id),
           getCategories(),
           getSessionsByGroup(data._id),
-        ]);
-      })
-      .then(([membersData, restaurantsData, categoriesData, sessionsData]) => {
-        setMembers(membersData);
-        setRestaurants(restaurantsData);
-        setCategories(categoriesData);
-        setSessions(sessionsData);
+        ]).then(([membersData, restaurantsData, categoriesData, sessionsData]) => {
+          setMembers(membersData);
+          setRestaurants(restaurantsData);
+          setCategories(categoriesData);
+          setSessions(sessionsData);
+
+          if (user?.id && !membersData.some((m) => m._id === user.id)) {
+            joinGroup(data._id)
+              .then(() => getGroupMembers(data._id))
+              .then(setMembers)
+              .catch(() => {
+                console.error("No se pudo unir al grupo.");
+              });
+          }
+        });
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "Error al cargar el grupo.");
       })
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, user]);
 
   const handleAddFriend = async (e: React.FormEvent) => {
     e.preventDefault();
