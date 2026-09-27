@@ -20,14 +20,18 @@ function Navbar() {
     <header className="bg-butter-500 shadow-md sticky top-0 z-20">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex justify-between items-center gap-3">
         <div className="flex items-center gap-2.5">
-          <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-butter-100 text-butter-500 shadow-inner">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3-1V6h-2a1 1 0 100 2M14 9l-3-1V6h2a1 1 0 110 2M7 10a2 2 0 100 4h1.5M10 10l2-1 2 1v2.5c0 1.4-1.6 2.5-3.9 2.5S7 13.9 7 12.5V10zM16 9a2 2 0 118 0v2c0 4-2.6 6-7 6" />
-            </svg>
-          </span>
-          <span className="text-xl sm:text-2xl font-extrabold text-butter-100 tracking-tight leading-none group-hover:opacity-80 transition-opacity">
+          <img
+            src={`${import.meta.env.BASE_URL}logo.png`}
+            alt="Gustitos y Cafecitos"
+            className="w-9 h-9 rounded-full object-cover"
+          />
+          <Link
+            to="/"
+            onClick={() => setMenuOpen(false)}
+            className="text-xl sm:text-2xl font-extrabold text-butter-100 tracking-tight leading-none hover:opacity-80 transition-opacity"
+          >
             Gustitos y Cafecitos
-          </span>
+          </Link>
         </div>
 
         {user ? (

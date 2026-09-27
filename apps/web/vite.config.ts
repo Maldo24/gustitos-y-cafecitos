@@ -11,13 +11,16 @@ export default defineConfig({
       manifest: {
         name: 'Gustitos y Cafecitos',
         short_name: 'Gustitos',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
+        lang: 'es',
+        theme_color: '#C28A3A',
+        background_color: '#FFF6D7',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' }
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'pwa-maskable-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'pwa-maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ]
       }
     })

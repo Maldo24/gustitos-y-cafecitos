@@ -46,11 +46,11 @@ function Login() {
       <div className="w-full md:w-1/2 flex flex-col items-center p-4 sm:p-6 h-full overflow-y-auto bg-gradient-to-br from-butter-100 to-butter-200">
         <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-md my-auto">
           <div className="flex flex-col items-center mb-6">
-            <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-butter-500 text-butter-100 shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3-1V6h-2a1 1 0 100 2M14 9l-3-1V6h2a1 1 0 110 2M7 10a2 2 0 100 4h1.5M10 10l2-1 2 1v2.5c0 1.4-1.6 2.5-3.9 2.5S7 13.9 7 12.5V10zM16 9a2 2 0 118 0v2c0 4-2.6 6-7 6" />
-              </svg>
-            </span>
+            <img
+              src={`${import.meta.env.BASE_URL}logo.png`}
+              alt="Gustitos y Cafecitos"
+              className="w-14 h-14 rounded-2xl object-cover shadow-sm"
+            />
             <h2 className="text-3xl font-bold mt-4 text-center">Bienvenido de vuelta</h2>
             <p className="text-sm text-gray-500 mt-1 text-center">Ingresa para ver tus grupos</p>
           </div>
