@@ -19,6 +19,12 @@ router.post('/:slug/restaurants', groupController.suggestRestaurant);
 // POST /api/groups/:groupId/members - Agregar un amigo al grupo por username
 router.post('/:groupId/members', groupController.addMember);
 
+// DELETE /api/groups/:groupId/members/:memberId - Expulsar a un miembro (solo admin del grupo)
+router.delete('/:groupId/members/:memberId', authenticateToken, groupController.removeMember);
+
+// DELETE /api/groups/:groupId/restaurants/:restaurantId - Eliminar recomendación (solo admin del grupo)
+router.delete('/:groupId/restaurants/:restaurantId', authenticateToken, groupController.removeRestaurant);
+
 // POST /api/groups/:groupId/join - Unirse al grupo con el usuario autenticado
 router.post('/:groupId/join', authenticateToken, groupController.join);
 

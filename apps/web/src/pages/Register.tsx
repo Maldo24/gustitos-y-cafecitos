@@ -123,16 +123,23 @@ function Register() {
         />
       </div>
 
-      <div className="w-full md:w-1/2 flex flex-col items-center justify-center p-4 h-full overflow-y-auto">
-          <h2 className="text-4xl font-bold mb-4 text-center">
-            Crear Cuenta
-          </h2>
+      <div className="w-full md:w-1/2 flex flex-col items-center p-4 sm:p-6 h-full overflow-y-auto bg-gradient-to-br from-butter-100 to-butter-200">
+        <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 w-full max-w-md my-auto">
+          <div className="flex flex-col items-center mb-6">
+            <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-butter-500 text-butter-100 shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3-1V6h-2a1 1 0 100 2M14 9l-3-1V6h2a1 1 0 110 2M7 10a2 2 0 100 4h1.5M10 10l2-1 2 1v2.5c0 1.4-1.6 2.5-3.9 2.5S7 13.9 7 12.5V10zM16 9a2 2 0 118 0v2c0 4-2.6 6-7 6" />
+              </svg>
+            </span>
+            <h2 className="text-3xl font-bold mt-4 text-center">Crea tu cuenta</h2>
+            <p className="text-sm text-gray-500 mt-1 text-center">Únete a tu cafecito con tus amistades</p>
+          </div>
 
           {errors.general && (
-            <p className="text-red-500 text-sm mb-4 text-center">{errors.general}</p>
+            <p className="text-red-500 text-sm mb-4 text-center bg-red-50 rounded-lg px-3 py-2">{errors.general}</p>
           )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3 w-full max-w-sm">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3 w-full">
             <div>
               <Input
                 label="Nombres"
@@ -206,7 +213,7 @@ function Register() {
             </div>
           </form>
 
-          <p className="mt-4 text-center text-sm text-gray-600">
+          <p className="mt-5 text-center text-sm text-gray-600">
             ¿Ya tienes cuenta?{" "}
             <button
               onClick={() => navigate("/login")}
@@ -215,6 +222,7 @@ function Register() {
               Inicia sesión
             </button>
           </p>
+        </div>
       </div>
     </div>
   );

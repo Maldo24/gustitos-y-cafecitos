@@ -42,3 +42,23 @@ export async function joinGroup(
     method: 'POST',
   });
 }
+
+export async function removeMember(
+  groupId: string,
+  memberId: string
+): Promise<{ message: string; group: Group }> {
+  return apiClient<{ message: string; group: Group }>(
+    `/groups/${groupId}/members/${memberId}`,
+    { method: 'DELETE' }
+  );
+}
+
+export async function removeRestaurantFromGroup(
+  groupId: string,
+  restaurantId: string
+): Promise<{ message: string; group: Group }> {
+  return apiClient<{ message: string; group: Group }>(
+    `/groups/${groupId}/restaurants/${restaurantId}`,
+    { method: 'DELETE' }
+  );
+}

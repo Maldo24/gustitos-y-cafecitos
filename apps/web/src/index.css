@@ -8,3 +8,15 @@
   --color-butter-400: #E9B957; /* Warm Honey */
   --color-butter-500: #C28A3A; /* Toasted Caramel */
 }
+
+@layer base {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background: var(--color-butter-300);
+    color: #5b3a0e;
+  }
+}

@@ -3,11 +3,12 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import Button from "../components/Button";
 import Input from "../components/Input";
 import Modal from "../components/Modal";
+import ConfirmModal from "../components/ConfirmModal";
 import Select from "../components/Select";
 import Badge from "../components/Badge";
 import Spinner from "../components/Spinner";
 import { useAuth } from "../context/AuthContext";
-import { getGroupBySlug, getGroupMembers, addMember, joinGroup } from "../api/groups";
+import { getGroupBySlug, getGroupMembers, addMember, joinGroup, removeMember, removeRestaurantFromGroup } from "../api/groups";
 import { getCategories, createCategory } from "../api/categories";
 import { getSessionsByGroup } from "../api/sessions";
 import {
@@ -66,6 +67,10 @@ function GroupDetail() {
   const [reviewOpenId, setReviewOpenId] = useState<string | null>(null);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewError, setReviewError] = useState("");
+
+  const [confirmRemoveMember, setConfirmRemoveMember] = useState<User | null>(null);
+  const [confirmRemoveRestaurant, setConfirmRemoveRestaurant] = useState<Restaurant | null>(null);
+  const [adminActionLoading, setAdminActionLoading] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -245,6 +250,38 @@ function GroupDetail() {
     }
   };
 
+  const handleKickMember = async () => {
+    if (!group || !confirmRemoveMember) return;
+    setAdminActionLoading(true);
+    try {
+      await removeMember(group._id, confirmRemoveMember._id);
+      const updated = await getGroupMembers(group._id);
+      setMembers(updated);
+      setConfirmRemoveMember(null);
+    } catch (err: unknown) {
+      setMemberError(err instanceof Error ? err.message : "Error al expulsar al miembro.");
+      setConfirmRemoveMember(null);
+    } finally {
+      setAdminActionLoading(false);
+    }
+  };
+
+  const handleRemoveRestaurant = async () => {
+    if (!group || !confirmRemoveRestaurant) return;
+    setAdminActionLoading(true);
+    try {
+      await removeRestaurantFromGroup(group._id, confirmRemoveRestaurant._id);
+      const updated = await getRestaurantsByGroup(group._id);
+      setRestaurants(updated);
+      setConfirmRemoveRestaurant(null);
+    } catch (err: unknown) {
+      setRestaurantsError(err instanceof Error ? err.message : "Error al eliminar la recomendación.");
+      setConfirmRemoveRestaurant(null);
+    } finally {
+      setAdminActionLoading(false);
+    }
+  };
+
   const filteredRestaurants = categoryFilter
     ? restaurants.filter((r) => getCategoryId(r.categoryId) === categoryFilter)
     : restaurants;
@@ -264,6 +301,8 @@ function GroupDetail() {
       </div>
     );
   }
+
+  const isAdmin = group.adminId === user?.id;
 
   return (
     <div className="p-6 max-w-4xl mx-auto h-full flex flex-col overflow-y-auto">
@@ -286,14 +325,24 @@ function GroupDetail() {
             {members.map((member) => (
               <li
                 key={member._id}
-                className="bg-white p-3 rounded-xl shadow-sm border border-butter-200 flex items-center justify-between"
+                className="bg-white p-3 rounded-xl shadow-sm border border-butter-200 flex items-center justify-between gap-3"
               >
-                <div>
+                <div className="flex items-center gap-2 flex-wrap">
                   <div className="font-bold text-gray-800">
                     {member.names} {member.firstSurname}{" "}
                     <span className="text-gray-400 font-normal">@{member.username}</span>
                   </div>
+                  {group.adminId === member._id && <Badge color="butter">Admin</Badge>}
                 </div>
+                {isAdmin && member._id !== user?.id && group.adminId !== member._id && (
+                  <Button
+                    variant="danger"
+                    className="text-sm py-1.5 px-3"
+                    onClick={() => setConfirmRemoveMember(member)}
+                  >
+                    Expulsar
+                  </Button>
+                )}
               </li>
             ))}
           </ul>
@@ -495,9 +544,20 @@ function GroupDetail() {
                             : "votos"}
                         </div>
                       </div>
-                      <Button onClick={() => handleVote(restaurant._id)} disabled={suggesting}>
-                        {hasVoted ? "Quitar voto" : "Votar"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button onClick={() => handleVote(restaurant._id)} disabled={suggesting}>
+                          {hasVoted ? "Quitar voto" : "Votar"}
+                        </Button>
+                        {isAdmin && (
+                          <Button
+                            variant="danger"
+                            className="text-sm py-1.5 px-3"
+                            onClick={() => setConfirmRemoveRestaurant(restaurant)}
+                          >
+                            Eliminar
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-4">
@@ -574,6 +634,28 @@ function GroupDetail() {
             </Button>
           </div>
         </Modal>
+      )}
+
+      {confirmRemoveMember && (
+        <ConfirmModal
+          title="Expulsar miembro"
+          message={`¿Seguro que quieres expulsar a @${confirmRemoveMember.username} del grupo? Esta acción no se puede deshacer.`}
+          confirmLabel="Expulsar"
+          loading={adminActionLoading}
+          onCancel={() => setConfirmRemoveMember(null)}
+          onConfirm={handleKickMember}
+        />
+      )}
+
+      {confirmRemoveRestaurant && (
+        <ConfirmModal
+          title="Eliminar recomendación"
+          message={`¿Seguro que quieres eliminar la recomendación "${confirmRemoveRestaurant.name}"? Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          loading={adminActionLoading}
+          onCancel={() => setConfirmRemoveRestaurant(null)}
+          onConfirm={handleRemoveRestaurant}
+        />
       )}
     </div>
   );

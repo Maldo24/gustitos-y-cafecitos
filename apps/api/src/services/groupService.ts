@@ -3,6 +3,11 @@ import {User} from  "../models/User";
 import { Restaurant } from "../models/Restaurant";
 import crypto from "crypto";
 
+function isGroupAdmin(group: IGroup | null, userId: string): boolean {
+    if (!group || !group.adminId) return false;
+    return group.adminId.toString() === userId.toString();
+}
+
 export const groupService = {
     // aca lo que vamos a generar es un id o slug para la parte final de los enlaces
     // asi son unicos
@@ -31,23 +36,102 @@ export const groupService = {
         const newGroup = new Group({
             name, 
             slug, 
-            members
+            members,
+            adminId: creatorId || null
         });
 
         return await newGroup.save();
     },
-    
 
+    // Asegura que todo grupo tenga un admin. Para grupos viejos sin adminId,
+    // el primer miembro (quien lo creó) pasa a ser el admin automáticamente.
+    async ensureGroupAdmin(group: IGroup | null): Promise<IGroup | null> {
+        if (!group) return null;
+        if (!group.adminId && group.members.length > 0) {
+            group.adminId = group.members[0];
+            await group.save();
+        }
+        return group;
+    },
+    
     //funcion para buscar grupos por su slug
 
     async getGroupBySlug(slug:string): Promise <IGroup | null>{
-        return await Group.findOne({slug})
+        const group = await Group.findOne({slug})
         .populate("members", "username email")
         .populate({
             path: "savedRestaurants",
             populate : {path: "categoryId", select: "name slug"}
         });
+
+        return await this.ensureGroupAdmin(group);
     },
+
+    // Expulsa a un miembro del grupo (solo el admin del grupo)
+    async removeMemberFromGroup(groupId: string, adminId: string, memberId: string): Promise<IGroup> {
+        const group = await Group.findById(groupId);
+        if (!group) {
+            throw new Error('El grupo no existe');
+        }
+
+        if (!isGroupAdmin(group, adminId)) {
+            throw new Error('Solo el administrador del grupo puede expulsar miembros');
+        }
+
+        if (memberId.toString() === adminId.toString()) {
+            throw new Error('El administrador no puede expulsarse a sí mismo');
+        }
+
+        if (group.adminId && memberId.toString() === group.adminId.toString()) {
+            throw new Error('No puedes expulsar al administrador del grupo');
+        }
+
+        const wasMember = group.members.some(
+            (id) => id.toString() === memberId.toString()
+        );
+
+        if (!wasMember) {
+            throw new Error('Ese usuario no es miembro del grupo');
+        }
+
+        group.members = group.members.filter(
+            (id) => id.toString() !== memberId.toString()
+        );
+
+        return await group.save();
+    },
+
+    // Elimina una recomendación (restaurante) del grupo (solo el admin)
+    async removeRestaurantFromGroup(groupId: string, adminId: string, restaurantId: string): Promise<IGroup> {
+        const group = await Group.findById(groupId);
+        if (!group) {
+            throw new Error('El grupo no existe');
+        }
+
+        if (!isGroupAdmin(group, adminId)) {
+            throw new Error('Solo el administrador del grupo puede eliminar recomendaciones');
+        }
+
+        const restaurant = await Restaurant.findById(restaurantId);
+        if (!restaurant || restaurant.groupId.toString() !== groupId.toString()) {
+            throw new Error('La recomendación no pertenece a este grupo');
+        }
+
+        const wasSaved = group.savedRestaurants.some(
+            (id) => id.toString() === restaurantId.toString()
+        );
+
+        if (wasSaved) {
+            group.savedRestaurants = group.savedRestaurants.filter(
+                (id) => id.toString() !== restaurantId.toString()
+            );
+        }
+
+        await Restaurant.findByIdAndDelete(restaurantId);
+        await group.save();
+        return group;
+    },
+
     async addRestaurantToGroup(groupSlug: string, restaurantId: string): Promise<IGroup> {
         const restaurantExists = await Restaurant.findById(restaurantId);
         if (!restaurantExists) {
@@ -127,7 +211,12 @@ export const groupService = {
         .populate('members', 'username names firstSurname') // Traemos info útil de los amigos
         .sort({ createdAt: -1 }); // Los más recientes primero
         
-        return groups;
+        // Backfill de admin para grupos antiguos sin adminId
+        await Promise.all(groups.map((g) => this.ensureGroupAdmin(g)));
+
+        return await Group.find({ members: userId })
+        .populate('members', 'username names firstSurname')
+        .sort({ createdAt: -1 });
     },
     async getGroupMembers(groupId: string) {
         // Buscamos el grupo y rellenamos la información de los miembros

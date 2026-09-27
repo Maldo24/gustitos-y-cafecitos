@@ -37,6 +37,7 @@ export interface Group {
   _id: string;
   slug: string;
   name: string;
+  adminId?: string;
   members: string[] | User[];
   savedRestaurants: string[] | Restaurant[];
   createdAt: string;

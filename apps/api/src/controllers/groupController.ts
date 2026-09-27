@@ -115,6 +115,48 @@ export const groupController = {
       res.status(400).json({ error: error.message });
     }
   },
+  async removeMember(req: Request, res: Response): Promise<void> {
+    try {
+      const { groupId, memberId } = req.params;
+      const adminId = (req as any).user?.userId;
+
+      if (typeof groupId !== 'string' || typeof memberId !== 'string') {
+        res.status(400).json({ error: 'El ID del grupo y del miembro son requeridos' });
+        return;
+      }
+
+      if (!adminId) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
+      }
+
+      const group = await groupService.removeMemberFromGroup(groupId, adminId, memberId);
+      res.status(200).json({ message: 'Miembro expulsado del grupo con exito', group });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  },
+  async removeRestaurant(req: Request, res: Response): Promise<void> {
+    try {
+      const { groupId, restaurantId } = req.params;
+      const adminId = (req as any).user?.userId;
+
+      if (typeof groupId !== 'string' || typeof restaurantId !== 'string') {
+        res.status(400).json({ error: 'El ID del grupo y de la recomendación son requeridos' });
+        return;
+      }
+
+      if (!adminId) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
+      }
+
+      const group = await groupService.removeRestaurantFromGroup(groupId, adminId, restaurantId);
+      res.status(200).json({ message: 'Recomendación eliminada del grupo con exito', group });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  },
   async getMembers(req: Request, res: Response): Promise<void> {
     try {
       const { groupId } = req.params;
