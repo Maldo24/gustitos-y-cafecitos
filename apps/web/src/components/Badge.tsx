@@ -8,7 +8,7 @@ interface BadgeProps {
 const colors = {
   green: 'bg-green-100 text-green-700',
   red: 'bg-red-100 text-red-700',
-  butter: 'bg-butter-100 text-butter-700',
+  butter: 'bg-butter-100 text-butter-500',
   gray: 'bg-gray-100 text-gray-600',
 };
 

@@ -1,5 +1,6 @@
 import { Session, ISession, ISessionParticipant } from '../models/Session.js';
 import { Group } from '../models/Group.js';
+import { validatePlainText } from '../utils/validators.js';
 
 export const sessionService = {
   
@@ -8,7 +9,8 @@ export const sessionService = {
     splitMode: 'equal' | 'by_consumption',
     tipPercentage: number,
     participants: ISessionParticipant[],
-    groupId?: string
+    groupId?: string,
+    requesterId?: string
   ): Promise<ISession> {
 
     if (!Array.isArray(participants) || participants.length === 0) {
@@ -23,17 +25,36 @@ export const sessionService = {
       throw new Error('La propina no puede superar el 100%');
     }
 
-    for (const p of participants) {
-      for (const item of p.itemsConsumed) {
-        if (item.price < 0 || item.quantity < 0) {
-          throw new Error('Los precios y cantidades no pueden ser negativos');
-        }
+    // Sanitizamos los textos que el usuario escribe (nombres de participantes, platos, título)
+    validatePlainText(title, 'titulo', { min: 2, max: 80 });
+
+    participants.forEach(p => {
+      validatePlainText(p.name, 'participante', { min: 1, max: 50 });
+
+      if (Array.isArray(p.itemsConsumed)) {
+        p.itemsConsumed.forEach(item => {
+          validatePlainText(item.dishName, 'consumo', { min: 1, max: 80 });
+
+          if (item.price < 0 || item.quantity < 0) {
+            throw new Error('Los precios y cantidades no pueden ser negativos');
+          }
+        });
       }
-    }
+    });
 
     if (groupId) {
       const groupExists = await Group.findById(groupId);
       if (!groupExists) throw new Error('El grupo especificado no existe');
+
+      if (requesterId) {
+        const isMember = groupExists.members.some(
+          (id) => id.toString() === requesterId.toString()
+        );
+
+        if (!isMember) {
+          throw new Error('Debes unirte al grupo antes de crear una cuenta');
+        }
+      }
     }
 
     let totalAmount = 0;

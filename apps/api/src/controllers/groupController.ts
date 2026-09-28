@@ -51,9 +51,26 @@ export const groupController = {
     try {
       const { slug } = req.params;
       const { restaurantId } = req.body;
+      const userId = (req as any).user?.userId;
 
       if (typeof slug !== 'string' || !restaurantId) {
         res.status(400).json({ error: 'El slug del grupo y el restaurantId son requeridos' });
+        return;
+      }
+
+      if (!userId) {
+        res.status(401).json({ error: 'Usuario no autenticado' });
+        return;
+      }
+
+      const group = await groupService.getGroupBySlug(slug);
+      if (!group) {
+        res.status(404).json({ error: 'Grupo no encontrado' });
+        return;
+      }
+
+      if (!await groupService.isGroupMember(group._id.toString(), userId)) {
+        res.status(403).json({ error: 'Debes unirte al grupo antes de sugerir restaurantes' });
         return;
       }
 
@@ -67,13 +84,14 @@ export const groupController = {
     try {
       const { groupId } = req.params;
       const { username } = req.body; 
+      const requesterId = (req as any).user?.userId;
 
       if (typeof groupId !== 'string' || !username) {
         res.status(400).json({ error: 'El ID del grupo y el username del amigo son requeridos' });
         return;
       }
 
-      const group = await groupService.addMemberToGroup(groupId, username);
+      const group = await groupService.addMemberToGroup(groupId, username, requesterId);
       res.status(200).json({ message: 'Amigo agregado al grupo con exito', group });
     } catch (error: any) {
       res.status(400).json({ error: error.message });

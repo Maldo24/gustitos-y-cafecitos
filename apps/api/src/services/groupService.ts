@@ -1,6 +1,7 @@
 import {Group, IGroup} from "../models/Group";
 import {User} from  "../models/User";
 import { Restaurant } from "../models/Restaurant";
+import { validatePlainText, validateUsername } from "../utils/validators.js";
 import crypto from "crypto";
 
 function isGroupAdmin(group: IGroup | null, userId: string): boolean {
@@ -13,7 +14,9 @@ export const groupService = {
     // asi son unicos
 
     async createGroup(name: string, creatorId?: string): Promise<IGroup>{
-        const baseSlug = name
+        const cleanName = validatePlainText(name, 'nombre del grupo', { min: 3, max: 60 });
+
+        const baseSlug = cleanName
         .toLocaleLowerCase()
         .trim()
         .normalize()
@@ -34,13 +37,20 @@ export const groupService = {
         }
 
         const newGroup = new Group({
-            name, 
+            name: cleanName, 
             slug, 
             members,
             adminId: creatorId || null
         });
 
         return await newGroup.save();
+    },
+
+    // ¿El usuario pertenece al grupo? (usado para autorizar acciones del grupo)
+    async isGroupMember(groupId: string, userId: string): Promise<boolean> {
+        const group = await Group.findById(groupId).select('members');
+        if (!group) return false;
+        return group.members.some((id) => id.toString() === userId.toString());
     },
 
     // Asegura que todo grupo tenga un admin. Para grupos viejos sin adminId,
@@ -153,9 +163,11 @@ export const groupService = {
     },
 
     //funcion para añadir miembros a los grupos
-    async addMemberToGroup(groupId: string, username: string) {
+    async addMemberToGroup(groupId: string, username: string, requesterId?: string) {
+        const cleanUsername = validateUsername(username);
+
         // 1. Buscamos al amigo
-        const userToAdd = await User.findOne({ username });
+        const userToAdd = await User.findOne({ username: cleanUsername });
         if (!userToAdd) {
             throw new Error('No encontramos a ningún usuario con ese username');
         }
@@ -164,6 +176,17 @@ export const groupService = {
         const group = await Group.findById(groupId);
         if (!group) {
             throw new Error('El grupo no existe');
+        }
+
+        // 2.1 Solo los miembros del grupo pueden invitar a alguien
+        if (requesterId) {
+            const requesterIsMember = group.members.some(
+                (memberId) => memberId.toString() === requesterId.toString()
+            );
+
+            if (!requesterIsMember) {
+                throw new Error('Debes unirte al grupo antes de invitar a alguien');
+            }
         }
 
         // 3. Verificamos que no esté ya dentro (convertimos a string para comparar bien)

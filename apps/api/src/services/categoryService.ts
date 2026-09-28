@@ -1,4 +1,5 @@
 import { Category, ICategory } from "../models/Category"
+import { validatePlainText } from "../utils/validators.js"
 
 export const DEFAULT_CATEGORIES = [
     'Desayuno',
@@ -34,7 +35,7 @@ export function categorySlug(cleanName: string): string {
 
 export const categoryService ={
     async createCategory(name: string): Promise<ICategory> {
-        const cleanName = normalizeCategoryName(name);
+        const cleanName = normalizeCategoryName(validatePlainText(name, 'categoria', { min: 2, max: 40 }));
         const slug = categorySlug(cleanName);
 
         // Verificar si ya existe una categoria con ese mismo slug
@@ -66,7 +67,7 @@ export const categoryService ={
             throw new Error('La categoria no existe');
         }
 
-        const cleanName = normalizeCategoryName(name);
+        const cleanName = normalizeCategoryName(validatePlainText(name, 'categoria', { min: 2, max: 40 }));
         const slug = categorySlug(cleanName);
 
         const existingCategory = await Category.findOne({ slug, _id: { $ne: id } });

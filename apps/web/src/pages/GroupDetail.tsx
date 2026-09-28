@@ -19,6 +19,7 @@ import {
   type CreateRestaurantPayload,
 } from "../api/restaurants";
 import type { Category, Group, Restaurant, Session, User } from "../types";
+import { isGoogleMapsLink } from "../utils/validation";
 
 function getCategoryName(category: string | Category): string {
   return typeof category === "string" ? category : category.name;
@@ -41,6 +42,7 @@ function GroupDetail() {
 
   const [friendUsername, setFriendUsername] = useState("");
   const [adding, setAdding] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [memberError, setMemberError] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -78,7 +80,7 @@ function GroupDetail() {
     getGroupBySlug(slug)
       .then((data) => {
         setGroup(data);
-        return Promise.all([
+        return         Promise.all([
           getGroupMembers(data._id),
           getRestaurantsByGroup(data._id),
           getCategories(),
@@ -88,15 +90,6 @@ function GroupDetail() {
           setRestaurants(restaurantsData);
           setCategories(categoriesData);
           setSessions(sessionsData);
-
-          if (user?.id && !membersData.some((m) => m._id === user.id)) {
-            joinGroup(data._id)
-              .then(() => getGroupMembers(data._id))
-              .then(setMembers)
-              .catch(() => {
-                console.error("No se pudo unir al grupo.");
-              });
-          }
         });
       })
       .catch((err: unknown) => {
@@ -104,6 +97,22 @@ function GroupDetail() {
       })
       .finally(() => setLoading(false));
   }, [slug, user]);
+
+  const isMember = !!(user && members.some((m) => m._id === user.id));
+
+  const handleJoinGroup = async () => {
+    if (!group || joining) return;
+    setJoining(true);
+    setMemberError("");
+    try {
+      await joinGroup(group._id);
+      setMembers(await getGroupMembers(group._id));
+    } catch (err: unknown) {
+      setMemberError(err instanceof Error ? err.message : "No se pudo unir al grupo.");
+    } finally {
+      setJoining(false);
+    }
+  };
 
   const handleAddFriend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +151,11 @@ function GroupDetail() {
 
     if (!restName.trim() || !restMapsLink.trim() || !restCategoryId || !restComment.trim()) {
       setRestError("Todos los campos son obligatorios (incluyendo tu comentario inicial).");
+      return;
+    }
+
+    if (!isGoogleMapsLink(restMapsLink.trim())) {
+      setRestError("El link debe ser de Google Maps (ej: https://maps.app.goo.gl/... o https://www.google.com/maps/...).");
       return;
     }
 
@@ -316,6 +330,20 @@ function GroupDetail() {
         </Button>
       </div>
 
+      {!isMember && (
+        <div className="mb-6 bg-butter-100 border border-butter-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="font-bold text-gray-800">Todavía no eres miembro de este grupo</p>
+            <p className="text-sm text-gray-600">
+              Puedes revisar todo, pero necesitas unirte para sugerir, reseñar o crear cuentas.
+            </p>
+          </div>
+          <Button onClick={handleJoinGroup} disabled={joining} className="shrink-0">
+            {joining ? "Uniendo..." : "Unirme al grupo"}
+          </Button>
+        </div>
+      )}
+
       <div className="mt-4">
         <h3 className="text-2xl font-bold text-gray-800 mb-4">Miembros</h3>
         {members.length === 0 ? (
@@ -358,9 +386,12 @@ function GroupDetail() {
             value={friendUsername}
             onChange={(value) => setFriendUsername(value)}
           />
-          <Button type="submit" disabled={adding}>
+          <Button type="submit" disabled={adding || !isMember}>
             {adding ? "Agregando..." : "Agregar amigo"}
           </Button>
+          {!isMember && (
+            <p className="text-xs text-gray-500">Necesitas unirte al grupo para invitar a alguien.</p>
+          )}
         </form>
       </div>
 
@@ -372,10 +403,16 @@ function GroupDetail() {
             <h3 className="text-3xl font-bold text-gray-800 mb-2">Cuentas compartidas</h3>
             <p className="text-gray-600">Divide la cuenta de una salida con los participantes.</p>
           </div>
-          <Button onClick={() => navigate(`/grupo/${slug}/nueva-cuenta`)}>
+          <Button onClick={() => navigate(`/grupo/${slug}/nueva-cuenta`)} disabled={!isMember}>
             + Nueva cuenta
           </Button>
         </div>
+
+        {!isMember && (
+          <p className="text-sm text-gray-500 mb-4">
+            Únete al grupo para poder crear cuentas compartidas.
+          </p>
+        )}
 
         {sessions.length === 0 ? (
           <p className="text-gray-500">
@@ -482,9 +519,12 @@ function GroupDetail() {
               onChange={(value) => setRestComment(value)}
             />
             {restError && <p className="text-red-500 text-sm">{restError}</p>}
-            <Button type="submit" disabled={suggesting}>
+            <Button type="submit" disabled={suggesting || !isMember}>
               {suggesting ? "Sugiriendo..." : "Sugerir restaurante"}
             </Button>
+            {!isMember && (
+              <p className="text-xs text-gray-500">Necesitas unirte al grupo para sugerir un restaurante.</p>
+            )}
           </form>
         </div>
 
@@ -545,7 +585,7 @@ function GroupDetail() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button onClick={() => handleVote(restaurant._id)} disabled={suggesting}>
+                        <Button onClick={() => handleVote(restaurant._id)} disabled={!isMember}>
                           {hasVoted ? "Quitar voto" : "Votar"}
                         </Button>
                         {isAdmin && (
@@ -603,7 +643,8 @@ function GroupDetail() {
                       ) : (
                         <button
                           onClick={() => setReviewOpenId(restaurant._id)}
-                          className="text-butter-500 font-bold text-sm hover:underline cursor-pointer"
+                          disabled={!isMember}
+                          className="text-butter-500 font-bold text-sm hover:underline cursor-pointer disabled:text-gray-400 disabled:cursor-not-allowed disabled:no-underline"
                         >
                           Agregar reseña
                         </button>

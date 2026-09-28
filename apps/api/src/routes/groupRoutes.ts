@@ -14,10 +14,10 @@ router.get('/my-groups', authenticateToken, groupController.getMyGroups);
 router.get('/:slug', groupController.getBySlug);
 
 // POST /api/groups/:slug/restaurants - Añadir un restaurante sugerido al grupo
-router.post('/:slug/restaurants', groupController.suggestRestaurant);
+router.post('/:slug/restaurants', authenticateToken, groupController.suggestRestaurant);
 
 // POST /api/groups/:groupId/members - Agregar un amigo al grupo por username
-router.post('/:groupId/members', groupController.addMember);
+router.post('/:groupId/members', authenticateToken, groupController.addMember);
 
 // DELETE /api/groups/:groupId/members/:memberId - Expulsar a un miembro (solo admin del grupo)
 router.delete('/:groupId/members/:memberId', authenticateToken, groupController.removeMember);

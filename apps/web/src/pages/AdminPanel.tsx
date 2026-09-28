@@ -246,17 +246,22 @@ function AdminPanel() {
         <ul className="flex flex-col gap-2">
           {groups.length === 0 && <p className="text-gray-500 text-sm">No hay grupos.</p>}
           {groups.map((grp) => (
-            <li key={grp._id} className="flex items-center justify-between gap-2 border-b border-gray-100 pb-2 last:border-b-0">
-              <div>
-                <div className="font-semibold text-gray-800">{grp.name}</div>
-                <div className="text-sm text-gray-500">
-                  /{grp.slug} · {Array.isArray(grp.members) ? grp.members.length : 0} miembros ·{" "}
-                  {Array.isArray(grp.savedRestaurants) ? grp.savedRestaurants.length : 0} restaurantes
+            <li key={grp._id} className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-3 last:border-b-0">
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-gray-800 break-words">{grp.name}</div>
+                <div className="text-xs text-gray-400 font-mono break-all">/{grp.slug}</div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <Badge color="butter">
+                    Integrantes: {Array.isArray(grp.members) ? grp.members.length : 0}
+                  </Badge>
+                  <Badge color="butter">
+                    Restaurantes: {Array.isArray(grp.savedRestaurants) ? grp.savedRestaurants.length : 0}
+                  </Badge>
                 </div>
               </div>
               <Link
                 to={`/grupo/${grp.slug}`}
-                className="text-butter-500 text-sm font-bold hover:underline"
+                className="text-butter-500 text-sm font-bold hover:underline shrink-0"
               >
                 Ver grupo →
               </Link>

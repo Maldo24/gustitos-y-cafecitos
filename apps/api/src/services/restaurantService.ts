@@ -3,6 +3,7 @@ import { Group } from '../models/Group.js';
 import { Types } from 'mongoose';
 import { Category } from '../models/Category.js';
 import { User } from '../models/User.js';
+import { validatePlainText, validateGoogleMapsLink } from '../utils/validators.js';
 
 // Utilidad para evitar errores si el usuario usa caracteres especiales en el nombre (Ej: paréntesis, asteriscos)
 const escapeRegex = (text: string) => text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
@@ -15,21 +16,36 @@ export const restaurantService = {
   async createRestaurant(
     name: string, 
     mapsLink: string, 
-    categoryId: string, 
+    categoryId: string,
     groupId: string,
     creatorId?: string,
     initialComment?: string,
     forceCreate?: boolean
   ) { 
+    // Validación de entrada (servidor = única frontera confiable)
+    const cleanName = validatePlainText(name, 'nombre del restaurante', { min: 2, max: 80 });
+    const cleanMapsLink = validateGoogleMapsLink(mapsLink);
+
     const categoryExists = await Category.findById(categoryId);
     if (!categoryExists) throw new Error('La categoria especificada no existe');
 
     const groupExists = await Group.findById(groupId);
     if (!groupExists) throw new Error('El grupo especificado no existe');
 
+    // Solo los miembros del grupo pueden sugerir
+    if (creatorId) {
+      const isMember = groupExists.members.some(
+        (id) => id.toString() === creatorId.toString()
+      );
+
+      if (!isMember) {
+        throw new Error('Debes unirte al grupo antes de sugerir restaurantes');
+      }
+    }
+
     // --- LÓGICA DE SIMILITUDES (Segura) ---
     if (!forceCreate) {
-      const safeRegexName = escapeRegex(name);
+      const safeRegexName = escapeRegex(cleanName);
       const similarPlaces = await Restaurant.find({
         groupId,
         name: { $regex: safeRegexName, $options: 'i' } 
@@ -48,20 +64,21 @@ export const restaurantService = {
 
     // Si el creador deja un comentario inicial, buscamos su nombre para la reseña
     if (creatorId && initialComment) {
+      const comment = validatePlainText(initialComment, 'comentario', { min: 1, max: 500 });
       const user = await User.findById(creatorId);
       if (user) {
         memberReviews.push({
           userId: user._id as any,
           username: user.username,
-          comment: initialComment,
+          comment,
           createdAt: new Date()
         });
       }
     }
 
     const newRestaurant = new Restaurant({
-      name,
-      mapsLink, 
+      name: cleanName,
+      mapsLink: cleanMapsLink, 
       categoryId,
       groupId,
       memberReviews,
@@ -100,11 +117,20 @@ export const restaurantService = {
    * Añade la reseña de un miembro al arreglo interno del restaurante.
    */
   async addReviewToRestaurant(restaurantId: string, userId: string, comment: string): Promise<IRestaurant | null> {
+    const cleanComment = validatePlainText(comment, 'reseña', { min: 1, max: 500 });
+
     const user = await User.findById(userId);
     if (!user) throw new Error('El usuario no existe');
 
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) throw new Error('El restaurante no existe');
+
+    // Solo los miembros del grupo pueden reseñar
+    const group = await Group.findById(restaurant.groupId).select('members');
+    const isMember = group?.members.some((id) => id.toString() === userId.toString());
+    if (!isMember) {
+      throw new Error('Debes unirte al grupo antes de reseñar');
+    }
 
     const alreadyReviewed = restaurant.memberReviews.some(
       (r) => r.userId.toString() === userId.toString()
@@ -118,7 +144,7 @@ export const restaurantService = {
     const newReview: IMemberReview = {
       userId: user._id as any,
       username: user.username,
-      comment,
+      comment: cleanComment,
       createdAt: new Date()
     };
 
