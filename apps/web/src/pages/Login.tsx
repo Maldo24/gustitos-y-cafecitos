@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 import { login } from "../api/auth";
@@ -87,6 +87,12 @@ function Login() {
 
           <p className="mt-6 text-center text-sm text-gray-600">
             ¿No tienes cuenta? <button onClick={() => navigate('/register')} className="text-butter-500 font-bold hover:underline cursor-pointer">Regístrate</button>
+          </p>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            ¿Olvidaste tu contraseña?{" "}
+            <Link to="/recuperar-contrasena" className="text-butter-500 font-bold hover:underline">
+              Recuperarla
+            </Link>
           </p>
         </div>
       </div>

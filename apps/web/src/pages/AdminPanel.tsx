@@ -4,15 +4,19 @@ import Badge from "../components/Badge";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import Input from "../components/Input";
+import ConfirmModal from "../components/ConfirmModal";
 import Modal from "../components/Modal";
 import Spinner from "../components/Spinner";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import {
   getAdminGroups,
+  getAdminPasswordRequests,
   getAdminStats,
   getAdminUsers,
+  reviewPasswordRequest,
   setUserRole,
+  type AdminPasswordRequest,
   type AdminStats,
   type AdminUser,
 } from "../api/admin";
@@ -42,8 +46,15 @@ function AdminPanel() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [passwordRequests, setPasswordRequests] = useState<AdminPasswordRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [reviewingRequest, setReviewingRequest] = useState<{
+    request: AdminPasswordRequest;
+    action: 'approve' | 'reject';
+  } | null>(null);
+  const [reviewBusy, setReviewBusy] = useState(false);
 
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -62,12 +73,14 @@ function AdminPanel() {
       getCategories(),
       getAdminUsers(),
       getAdminGroups(),
+      getAdminPasswordRequests(),
     ])
-      .then(([s, c, u, g]) => {
+      .then(([s, c, u, g, p]) => {
         setStats(s);
         setCategories(c);
         setUsers(u);
         setGroups(g);
+        setPasswordRequests(p);
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : "Error al cargar el panel de administración.");
@@ -132,6 +145,24 @@ function AdminPanel() {
       showToast(`${target.username} ahora es ${newRole === "admin" ? "admin" : "usuario"}`);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : "Error al cambiar el rol.");
+    }
+  };
+
+  const handleReviewRequest = async () => {
+    if (!reviewingRequest || reviewBusy) return;
+    setReviewBusy(true);
+    try {
+      const { request, action } = reviewingRequest;
+      const result = await reviewPasswordRequest(request._id, action);
+      setPasswordRequests((prev) =>
+        prev.map((r) => (r._id === request._id ? { ...r, status: action === 'approve' ? 'approved' : 'rejected' } : r))
+      );
+      setReviewingRequest(null);
+      showToast(result.message);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Error al revisar la solicitud.");
+    } finally {
+      setReviewBusy(false);
     }
   };
 
@@ -241,6 +272,68 @@ function AdminPanel() {
         </ul>
       </Card>
 
+      <h3 className="text-2xl font-bold text-gray-800 mb-3">Solicitudes de cambio de contraseña</h3>
+      <Card className="mb-8">
+        {passwordRequests.length === 0 ? (
+          <p className="text-gray-500 text-sm">No hay solicitudes registradas.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {passwordRequests.map((req) => (
+              <li
+                key={req._id}
+                className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-2 last:border-b-0"
+              >
+                <div className="min-w-0">
+                  <div className="font-semibold text-gray-800">@{req.username}</div>
+                  <div className="text-sm text-gray-500 break-all">{req.email}</div>
+                  <div className="text-xs text-gray-400">
+                    {new Date(req.createdAt).toLocaleString("es")}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge
+                    color={
+                      req.status === "pending"
+                        ? "butter"
+                        : req.status === "approved"
+                          ? "green"
+                          : req.status === "rejected"
+                            ? "red"
+                            : "gray"
+                    }
+                  >
+                    {req.status === "pending"
+                      ? "Pendiente"
+                      : req.status === "approved"
+                        ? "Aprobada"
+                        : req.status === "rejected"
+                          ? "Rechazada"
+                          : "Completada"}
+                  </Badge>
+                  {req.status === "pending" && (
+                    <>
+                      <Button
+                        className="px-3 py-1 text-sm"
+                        onClick={() => setReviewingRequest({ request: req, action: "approve" })}
+                      >
+                        Aprobar
+                      </Button>
+                      <Button
+                        variant="danger"
+                        className="px-3 py-1 text-sm"
+                        onClick={() => setReviewingRequest({ request: req, action: "reject" })}
+                      >
+                        Rechazar
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
       <h3 className="text-2xl font-bold text-gray-800 mb-3">Grupos</h3>
       <Card>
         <ul className="flex flex-col gap-2">
@@ -252,10 +345,13 @@ function AdminPanel() {
                 <div className="text-xs text-gray-400 font-mono break-all">/{grp.slug}</div>
                 <div className="flex flex-wrap gap-2 mt-2">
                   <Badge color="butter">
-                    Integrantes: {Array.isArray(grp.members) ? grp.members.length : 0}
+                    Integrantes:{" "}
+                    {grp.membersCount ?? (Array.isArray(grp.members) ? grp.members.length : 0)}
                   </Badge>
                   <Badge color="butter">
-                    Restaurantes: {Array.isArray(grp.savedRestaurants) ? grp.savedRestaurants.length : 0}
+                    Restaurantes:{" "}
+                    {grp.restaurantsCount ??
+                      (Array.isArray(grp.savedRestaurants) ? grp.savedRestaurants.length : 0)}
                   </Badge>
                 </div>
               </div>
@@ -269,6 +365,21 @@ function AdminPanel() {
           ))}
         </ul>
       </Card>
+
+      {reviewingRequest && (
+        <ConfirmModal
+          title={reviewingRequest.action === "approve" ? "Aprobar solicitud" : "Rechazar solicitud"}
+          message={
+            reviewingRequest.action === "approve"
+              ? `Se le entrega a @${reviewingRequest.request.username} un código válido por 30 minutos para que defina su nueva contraseña. ¿Continuar?`
+              : `@${reviewingRequest.request.username} no podrá cambiar su contraseña con esta solicitud. ¿Rechazar?`
+          }
+          confirmLabel={reviewingRequest.action === "approve" ? "Aprobar" : "Rechazar"}
+          loading={reviewBusy}
+          onCancel={() => setReviewingRequest(null)}
+          onConfirm={handleReviewRequest}
+        />
+      )}
 
       {editingCategory && (
         <Modal title="Editar categoría" onClose={() => setEditingCategory(null)}>

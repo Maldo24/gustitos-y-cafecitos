@@ -19,4 +19,10 @@ router.patch('/users/:id/role', adminController.updateUserRole);
 // GET /api/admin/groups - Listar todos los grupos
 router.get('/groups', adminController.listGroups);
 
+// GET /api/admin/password-requests - Solicitudes de cambio de contraseña
+router.get('/password-requests', adminController.listPasswordRequests);
+
+// PATCH /api/admin/password-requests/:id - Aprobar o rechazar una solicitud
+router.patch('/password-requests/:id', adminController.reviewPasswordRequest);
+
 export default router;

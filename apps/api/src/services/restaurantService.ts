@@ -86,6 +86,13 @@ export const restaurantService = {
     });
 
     const savedRestaurant = await newRestaurant.save();
+
+    // Mantenemos group.savedRestaurants sincronizado (antes quedaba siempre vacío)
+    await Group.updateOne(
+      { _id: groupId },
+      { $addToSet: { savedRestaurants: savedRestaurant._id } }
+    );
+
     return { status: 'CREATED', data: savedRestaurant };
   },
 

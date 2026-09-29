@@ -3,6 +3,7 @@ import Home from './pages/Home'
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoutes';
@@ -62,6 +63,7 @@ function App() {
               />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/recuperar-contrasena" element={<ForgotPassword />} />
             <Route 
                 path="/dashboard" 
                 element={
