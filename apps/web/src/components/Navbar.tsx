@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from './Button';
+import NotificationBell from './NotificationBell';
 
 function Navbar() {
   const { user, logout } = useAuth();
@@ -38,6 +39,7 @@ function Navbar() {
           <>
             {/* Desktop */}
             <div className="hidden md:flex items-center gap-3">
+              <NotificationBell />
               <Link
                 to="/dashboard"
                 className="text-butter-100 font-bold hover:bg-butter-400/30 px-3 py-2 rounded-lg transition-colors"
@@ -67,22 +69,25 @@ function Navbar() {
             </div>
 
             {/* Mobile */}
-            <button
-              type="button"
-              onClick={() => setMenuOpen((prev) => !prev)}
-              aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
-              className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg text-butter-100 hover:bg-butter-400/30 transition-colors"
-            >
-              {menuOpen ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
-            </button>
+            <div className="md:hidden flex items-center gap-1">
+              <NotificationBell />
+              <button
+                type="button"
+                onClick={() => setMenuOpen((prev) => !prev)}
+                aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+                className="flex items-center justify-center w-10 h-10 rounded-lg text-butter-100 hover:bg-butter-400/30 transition-colors"
+              >
+                {menuOpen ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </>
         ) : (
           <span className="text-butter-200 text-sm font-semibold hidden sm:inline">Buen café, mejor compañía</span>

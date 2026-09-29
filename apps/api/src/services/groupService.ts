@@ -1,6 +1,7 @@
 import {Group, IGroup} from "../models/Group";
 import {User} from  "../models/User";
 import { Restaurant } from "../models/Restaurant";
+import { notificationService } from "./notificationService.js";
 import { validatePlainText, validateUsername } from "../utils/validators.js";
 import crypto from "crypto";
 
@@ -201,7 +202,27 @@ export const groupService = {
         // 4. Lo agregamos y guardamos
         group.members.push(userToAdd._id);
         await group.save();
-        
+
+        // Avisamos al resto del grupo y al invitado
+        await notificationService.notifyOne({
+            userId: userToAdd._id.toString(),
+            type: 'member_added',
+            message: `${requesterId ? 'Alguien' : 'Un administrador'} te agrego al grupo "${group.name}"`,
+            link: `/grupo/${group.slug}`,
+            actorName: requesterId ? undefined : null
+        });
+
+        const groupLink = `/grupo/${group.slug}`;
+        await notificationService.notifyMany({
+            userIds: group.members
+                .map((id) => id.toString())
+                .filter((id) => id !== userToAdd._id.toString() && id !== requesterId),
+            type: 'member_joined',
+            message: `@${userToAdd.username} se unió al grupo "${group.name}"`,
+            link: groupLink,
+            actorName: userToAdd.username
+        });
+
         return group;
     }, 
     // Agregamos el usuario actual al grupo (unirse)
@@ -225,7 +246,20 @@ export const groupService = {
         }
 
         group.members.push(userExists._id);
-        return await group.save();
+        const savedGroup = await group.save();
+
+        // Avisamos al resto de miembros del grupo
+        await notificationService.notifyMany({
+            userIds: group.members
+                .map((id) => id.toString())
+                .filter((id) => id !== userId.toString()),
+            type: 'member_joined',
+            message: `@${userExists.username} se unió al grupo "${group.name}"`,
+            link: `/grupo/${group.slug}`,
+            actorName: userExists.username
+        });
+
+        return savedGroup;
     },
 
     // Buscamos todos los grupos donde el array 'members' contenga el ID del usuario
