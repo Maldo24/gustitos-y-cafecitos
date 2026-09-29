@@ -26,6 +26,7 @@ import {
   restoreGroup,
   reviewPasswordRequest,
   setUserBlocked,
+  setUserRole,
   type AdminPasswordRequest,
   type AdminStats,
   type AdminUser,

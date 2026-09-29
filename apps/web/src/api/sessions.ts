@@ -13,6 +13,8 @@ export interface CreateSessionPayload {
   tipPercentage?: number;
   participants: CreateSessionParticipant[];
   groupId?: string;
+  /** En partes iguales se envía el total completo y el backend reparte. */
+  totalAmount?: number;
 }
 
 export async function createSession(

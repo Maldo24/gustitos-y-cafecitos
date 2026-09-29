@@ -4,7 +4,7 @@ import { sessionService } from '../services/sessionService.js';
 export const sessionController = {
   async create(req: Request, res: Response): Promise<void> {
     try {
-      const { title, splitMode, tipPercentage, participants, groupId } = req.body;
+      const { title, splitMode, tipPercentage, participants, groupId, totalAmount } = req.body;
       const requesterId = (req as any).user?.userId;
 
       if (!title || !splitMode || !participants || !Array.isArray(participants)) {
@@ -12,7 +12,15 @@ export const sessionController = {
         return;
       }
 
-      const session = await sessionService.createSession(title, splitMode, tipPercentage || 0, participants, groupId, requesterId);
+      const session = await sessionService.createSession(
+        title,
+        splitMode,
+        tipPercentage || 0,
+        participants,
+        groupId,
+        requesterId,
+        typeof totalAmount === 'number' ? totalAmount : undefined
+      );
       res.status(201).json({ message: 'Sesion de cuenta calculada y guardada con exito', session });
     } catch (error: any) {
       res.status(400).json({ error: error.message });

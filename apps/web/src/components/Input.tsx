@@ -1,10 +1,19 @@
 import { useState } from "react";
 
-function Input({ label, type, value, placeholder, onChange, error }: 
-    { label: string; type: string; value: string; placeholder:string, onChange: (value: string) => void, error?: string }) {
+function Input({ label, type, value, placeholder, onChange, error, numeric }: 
+    { label: string; type: string; value: string; placeholder:string, onChange: (value: string) => void, error?: string, numeric?: boolean }) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
   const inputType = isPassword && showPassword ? "text" : type;
+
+  // Solo dígitos: sin signo menos, sin letras y sin decimales
+  const handleChange = (raw: string) => {
+    if (numeric) {
+      onChange(raw.replace(/\D/g, ""));
+      return;
+    }
+    onChange(raw);
+  };
 
   return (
     <div className="flex flex-col">
@@ -12,10 +21,12 @@ function Input({ label, type, value, placeholder, onChange, error }:
       <div className="relative">
         <input
           type={inputType}
+          inputMode={numeric ? "numeric" : undefined}
+          min={numeric ? 0 : undefined}
           className="w-full px-3 py-2 bg-white border border-butter-300 rounded focus:outline-none focus:ring-2 focus:ring-butter-400"
           placeholder={placeholder}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
         />
         {isPassword && (
           <button

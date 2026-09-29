@@ -10,7 +10,8 @@ export const sessionService = {
     tipPercentage: number,
     participants: ISessionParticipant[],
     groupId?: string,
-    requesterId?: string
+    requesterId?: string,
+    totalAmountInput?: number
   ): Promise<ISession> {
 
     if (!Array.isArray(participants) || participants.length === 0) {
@@ -23,6 +24,16 @@ export const sessionService = {
 
     if (tipPercentage > 100) {
       throw new Error('La propina no puede superar el 100%');
+    }
+
+    // En partes iguales el usuario ingresa el total de la cuenta, no el detalle
+    const hasTotalInput = typeof totalAmountInput === 'number' && Number.isFinite(totalAmountInput);
+    if (hasTotalInput && totalAmountInput! < 0) {
+      throw new Error('El total de la cuenta no puede ser negativo');
+    }
+
+    if (splitMode === 'equal' && hasTotalInput && totalAmountInput! <= 0) {
+      throw new Error('El total de la cuenta debe ser mayor a 0');
     }
 
     // Sanitizamos los textos que el usuario escribe (nombres de participantes, platos, título)
@@ -59,15 +70,25 @@ export const sessionService = {
 
     let totalAmount = 0;
 
-    participants.forEach(p => {
-      let subtotal = 0;
-      p.itemsConsumed.forEach(item => {
-        subtotal += item.price * item.quantity;
+    if (splitMode === 'equal' && hasTotalInput) {
+      // El total viene del formulario: no necesitamos el detalle de platos
+      totalAmount = totalAmountInput!;
+
+      participants.forEach(p => {
+        p.finalPay = 0;
+        p.isPaid = false;
       });
-      p.finalPay = subtotal; 
-      totalAmount += subtotal;
-      p.isPaid = false; // Nos aseguramos de que inicialice en falso
-    });
+    } else {
+      participants.forEach(p => {
+        let subtotal = 0;
+        p.itemsConsumed.forEach(item => {
+          subtotal += item.price * item.quantity;
+        });
+        p.finalPay = subtotal;
+        totalAmount += subtotal;
+        p.isPaid = false; // Nos aseguramos de que inicialice en falso
+      });
+    }
 
     const tipFactor = 1 + (tipPercentage / 100);
 

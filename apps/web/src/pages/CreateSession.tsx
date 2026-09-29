@@ -59,7 +59,8 @@ function subtotalOf(p: DraftParticipant, mode: "equal" | "by_consumption"): numb
 function calculatePreview(
   participants: DraftParticipant[],
   tipPercentage: string,
-  splitMode: "equal" | "by_consumption"
+  splitMode: "equal" | "by_consumption",
+  totalBill: string
 ) {
   let totalAmount = 0;
   const rows = participants.map((p) => {
@@ -67,6 +68,11 @@ function calculatePreview(
     totalAmount += subtotal;
     return { key: p.key, name: p.name, subtotal, finalPay: 0 };
   });
+
+  // En partes iguales manda el total que escribió el usuario
+  if (splitMode === "equal") {
+    totalAmount = parseFloat(totalBill) || 0;
+  }
 
   const tipFactor = 1 + (Number(tipPercentage) || 0) / 100;
 
@@ -99,6 +105,7 @@ function CreateSession() {
   const [title, setTitle] = useState("");
   const [splitMode, setSplitMode] = useState<"equal" | "by_consumption">("equal");
   const [tipPercentage, setTipPercentage] = useState("0");
+  const [totalBill, setTotalBill] = useState("");
   const [participants, setParticipants] = useState<DraftParticipant[]>([]);
   const [externalName, setExternalName] = useState("");
   const [externalError, setExternalError] = useState("");
@@ -174,17 +181,13 @@ function CreateSession() {
     );
   };
 
-  const changeQuantity = (participantKey: string, itemKey: string, delta: number) => {
+  const updateQuantity = (participantKey: string, itemKey: string, quantity: number) => {
     setParticipants((prev) =>
       prev.map((p) =>
         p.key === participantKey
           ? {
               ...p,
-              items: p.items.map((item) =>
-                item.key === itemKey
-                  ? { ...item, quantity: Math.max(1, (item.quantity || 1) + delta) }
-                  : item
-              ),
+              items: p.items.map((item) => (item.key === itemKey ? { ...item, quantity } : item)),
             }
           : p
       )
@@ -219,8 +222,20 @@ function CreateSession() {
       return;
     }
 
+    if (splitMode === "equal") {
+      if ((parseInt(totalBill) || 0) <= 0) {
+        setError("Escribe el total de la cuenta para poder dividirla.");
+        return;
+      }
+    }
+
     if (participants.some((p) => subtotalOf(p, splitMode) < 0)) {
       setError("Los montos no pueden ser negativos.");
+      return;
+    }
+
+    if (splitMode === "by_consumption" && participants.some((p) => subtotalOf(p, splitMode) <= 0)) {
+      setError("En modo por consumo, cada participante debe tener al menos un monto o plato con precio.");
       return;
     }
 
@@ -232,6 +247,7 @@ function CreateSession() {
         splitMode,
         tipPercentage: Number(tipPercentage) || 0,
         groupId: group._id,
+        totalAmount: splitMode === "equal" ? parseInt(totalBill) || 0 : undefined,
         participants: participants.map((p) => ({
           name: p.name.trim(),
           userId: p.userId,
@@ -247,7 +263,7 @@ function CreateSession() {
     }
   };
 
-  const preview = calculatePreview(participants, tipPercentage, splitMode);
+  const preview = calculatePreview(participants, tipPercentage, splitMode, totalBill);
 
   if (loading) {
     return <div className="p-6 max-w-4xl mx-auto h-full">Cargando...</div>;
@@ -298,20 +314,57 @@ function CreateSession() {
             </div>
             <p className="text-xs text-gray-500 mt-2">
               {splitMode === "equal"
-                ? "Todos pagan lo mismo. Puedes anotar cuánto consumió cada quien (opcional) para llevar el control."
+                ? "Escribe el total de la cuenta y lo dividimos en partes iguales entre todos los participantes."
                 : "Cada quien paga según lo que consumió. Carga el detalle de platos o el monto total."}
             </p>
           </div>
 
-          <div className="max-w-xs">
-            <Input
-              type="number"
-              label="Propina (%)"
-              placeholder="0"
-              value={tipPercentage}
-              onChange={(value) => setTipPercentage(value)}
-            />
-          </div>
+          {splitMode === "equal" ? (
+            <div>
+              <Input
+                type="text"
+                numeric
+                label="Total de la cuenta"
+                placeholder="Ej. 45000"
+                value={totalBill}
+                onChange={setTotalBill}
+              />
+              {participants.length > 0 && (parseInt(totalBill) || 0) > 0 && (
+                <p className="text-sm text-gray-600 mt-2">
+                  Se divide entre {participants.length}{" "}
+                  {participants.length === 1 ? "participante" : "participantes"}:{" "}
+                  <span className="font-bold text-butter-500">
+                    ${(((parseInt(totalBill) || 0) * (1 + (parseInt(tipPercentage) || 0) / 100)) / participants.length).toFixed(2)}
+                  </span>{" "}
+                  c/u
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="max-w-xs">
+              <Input
+                type="text"
+                numeric
+                label="Propina (%)"
+                placeholder="0"
+                value={tipPercentage}
+                onChange={setTipPercentage}
+              />
+            </div>
+          )}
+
+          {splitMode === "equal" && (
+            <div className="max-w-xs">
+              <Input
+                type="text"
+                numeric
+                label="Propina (%)"
+                placeholder="0"
+                value={tipPercentage}
+                onChange={setTipPercentage}
+              />
+            </div>
+          )}
         </div>
 
         {/* Participantes */}
@@ -421,7 +474,8 @@ function CreateSession() {
                           </p>
                           <div className="max-w-[12rem]">
                             <Input
-                              type="number"
+                              type="text"
+                              numeric
                               label="O monto total consumido"
                               placeholder="Ej. 12500"
                               value={participant.total}
@@ -449,58 +503,30 @@ function CreateSession() {
                               </div>
                               <div className="w-full md:w-32">
                                 <Input
-                                  type="number"
+                                  type="text"
+                                  numeric
                                   label="Precio"
                                   placeholder="3500"
                                   value={item.price}
                                   onChange={(value) => updateItem(participant.key, item.key, "price", value)}
                                 />
                               </div>
-                              <div className="w-full md:w-32">
-                                <span className="text-gray-700 text-sm font-bold mb-2 block">
-                                  Cantidad:
-                                </span>
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    type="button"
-                                    aria-label="Quitar uno"
-                                    onClick={() => changeQuantity(participant.key, item.key, -1)}
-                                    className="w-10 h-[42px] rounded-lg bg-butter-100 border border-butter-300 font-extrabold text-butter-500 text-lg cursor-pointer hover:bg-butter-200"
-                                  >
-                                    −
-                                  </button>
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    value={item.quantity}
-                                    onChange={(e) => {
-                                      const parsed = parseInt(e.target.value);
-                                      if (!Number.isNaN(parsed) && parsed >= 1) {
-                                        setParticipants((prev) =>
-                                          prev.map((p) =>
-                                            p.key === participant.key
-                                              ? {
-                                                  ...p,
-                                                  items: p.items.map((i) =>
-                                                    i.key === item.key ? { ...i, quantity: parsed } : i
-                                                  ),
-                                                }
-                                              : p
-                                          )
-                                        );
-                                      }
-                                    }}
-                                    className="w-14 h-[42px] px-2 text-center bg-white border border-butter-300 rounded focus:outline-none focus:ring-2 focus:ring-butter-400"
-                                  />
-                                  <button
-                                    type="button"
-                                    aria-label="Agregar uno"
-                                    onClick={() => changeQuantity(participant.key, item.key, 1)}
-                                    className="w-10 h-[42px] rounded-lg bg-butter-100 border border-butter-300 font-extrabold text-butter-500 text-lg cursor-pointer hover:bg-butter-200"
-                                  >
-                                    +
-                                  </button>
-                                </div>
+                              <div className="w-full md:w-24">
+                                <Input
+                                  type="text"
+                                  numeric
+                                  label="Cantidad"
+                                  placeholder="1"
+                                  value={String(item.quantity)}
+                                  onChange={(value) => {
+                                    const parsed = parseInt(value);
+                                    updateQuantity(
+                                      participant.key,
+                                      item.key,
+                                      Number.isNaN(parsed) || parsed < 1 ? 1 : parsed
+                                    );
+                                  }}
+                                />
                               </div>
                               <Button
                                 type="button"
@@ -522,15 +548,9 @@ function CreateSession() {
                       )}
                     </div>
                   ) : (
-                    <div className="max-w-[12rem]">
-                      <Input
-                        type="number"
-                        label="Cuánto consumió (opcional)"
-                        placeholder="Ej. 12500"
-                        value={participant.total}
-                        onChange={(value) => updateParticipant(participant.key, { total: value })}
-                      />
-                    </div>
+                    <p className="text-sm text-gray-500">
+                      En partes iguales no necesitas anotar el consumo: se reparte el total entre todos.
+                    </p>
                   )}
                 </div>
               );
