@@ -3,6 +3,7 @@ import type { Session } from '../types';
 
 export interface CreateSessionParticipant {
   name: string;
+  userId?: string;
   itemsConsumed: { dishName: string; price: number; quantity: number }[];
 }
 

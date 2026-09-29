@@ -66,6 +66,7 @@ function GroupDetail() {
   const [categoryError, setCategoryError] = useState("");
 
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [section, setSection] = useState<"usuarios" | "restaurantes" | "cuentas">("usuarios");
   const [similarModal, setSimilarModal] = useState<{ message: string } | null>(null);
   const [pendingPayload, setPendingPayload] = useState<CreateRestaurantPayload | null>(null);
 
@@ -375,16 +376,46 @@ function GroupDetail() {
 
   const isAdmin = group.adminId === user?.id;
 
+  const SECTIONS = [
+    { id: "usuarios" as const, label: "Usuarios", count: members.length },
+    { id: "restaurantes" as const, label: "Restaurantes", count: restaurants.length },
+    { id: "cuentas" as const, label: "Cuentas", count: sessions.length },
+  ];
+
   return (
-    <div className="p-6 max-w-4xl mx-auto h-full flex flex-col overflow-y-auto">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto h-full flex flex-col overflow-y-auto">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-4xl font-bold text-butter-500 mb-1">{group.name}</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-butter-500 mb-1">{group.name}</h2>
           <p className="text-gray-500 text-sm">Código: <span className="font-mono">{group.slug}</span></p>
         </div>
         <Button onClick={handleCopyLink}>
           {copied ? "¡Link copiado!" : "Copiar link de invitación"}
         </Button>
+      </div>
+
+      {/* Secciones del grupo */}
+      <div className="flex gap-2 mb-6 border-b border-butter-200 pb-3">
+        {SECTIONS.map((item) => {
+          const isActive = section === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setSection(item.id)}
+              className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${
+                isActive
+                  ? "bg-butter-500 text-white"
+                  : "bg-white text-gray-700 hover:bg-butter-100 border border-butter-200"
+              }`}
+            >
+              {item.label}
+              <span className={`ml-2 text-xs font-extrabold ${isActive ? "text-butter-100" : "text-gray-500"}`}>
+                {item.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {!isMember && (
@@ -401,6 +432,7 @@ function GroupDetail() {
         </div>
       )}
 
+      {section === "usuarios" && (
       <div className="mt-4">
         <h3 className="text-2xl font-bold text-gray-800 mb-4">Miembros</h3>
         {members.length === 0 ? (
@@ -462,9 +494,9 @@ function GroupDetail() {
           </div>
         )}
       </div>
+      )}
 
-      <hr className="my-8 border-butter-200" />
-
+      {section === "cuentas" && (
       <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
@@ -516,9 +548,9 @@ function GroupDetail() {
           </ul>
         )}
       </div>
+      )}
 
-      <hr className="my-8 border-butter-200" />
-
+      {section === "restaurantes" && (
       <div className="mb-6">
         <h3 className="text-3xl font-bold text-gray-800 mb-2">Restaurantes sugeridos</h3>
         <p className="text-gray-600 mb-4">
@@ -752,6 +784,7 @@ function GroupDetail() {
           )}
         </div>
       </div>
+      )}
 
       {similarModal && (
         <Modal title="Restaurante similar" onClose={() => setSimilarModal(null)}>
