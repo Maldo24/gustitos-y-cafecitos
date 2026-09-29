@@ -54,6 +54,15 @@ export const authService = {
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) throw new Error('Usuario o contrasena incorrectos');
 
+    // Cuenta bloqueada: no entra, pero el motivo viaja para que pueda apelar
+    if (user.blocked) {
+      const error = new Error(
+        `Tu cuenta fue bloqueada por un administrador. Motivo: ${user.blockReason || 'no especificado'}.`
+      ) as Error & { code?: string };
+      error.code = 'USER_BLOCKED';
+      throw error;
+    }
+
     // Generar el token de acceso con una validez de 2 horas
     const accessToken = jwt.sign(
       { userId: user._id, username: user.username },

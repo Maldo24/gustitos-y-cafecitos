@@ -262,6 +262,40 @@ export const groupService = {
         return savedGroup;
     },
 
+    // Un miembro puede salirse del grupo por su cuenta
+    async leaveGroup(groupId: string, userId: string): Promise<IGroup> {
+        const group = await Group.findById(groupId);
+        if (!group) {
+            throw new Error('El grupo no existe');
+        }
+
+        const isMember = group.members.some((id) => id.toString() === userId.toString());
+        if (!isMember) {
+            throw new Error('No eres miembro de este grupo');
+        }
+
+        // El admin no puede salirse: el grupo se quedaría sin administrador.
+        // Si quiere cerrarlo, puede eliminarlo.
+        if (group.adminId && group.adminId.toString() === userId.toString()) {
+            throw new Error('Eres el administrador del grupo. No puedes salirte, pero puedes eliminar el grupo.');
+        }
+
+        group.members = group.members.filter((id) => id.toString() !== userId.toString());
+
+        const savedGroup = await group.save();
+
+        // Avisamos a los que quedan
+        await notificationService.notifyMany({
+            userIds: group.members.map((id) => id.toString()),
+            type: 'member_joined',
+            message: `Alguien salió del grupo "${group.name}"`,
+            link: `/grupo/${group.slug}`,
+            actorName: null
+        });
+
+        return savedGroup;
+    },
+
     // Buscamos todos los grupos donde el array 'members' contenga el ID del usuario
     async getGroupsByUser(userId: string) {
         const groups = await Group.find({ members: userId })

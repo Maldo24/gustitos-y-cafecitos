@@ -44,7 +44,9 @@ export const authController = {
         accessToken
       });
     } catch (error: any) {
-      res.status(401).json({ error: error.message });
+      // Si la cuenta está bloqueada, el frontend necesita el código para mostrar la apelación
+      const status = error.code === 'USER_BLOCKED' ? 403 : 401;
+      res.status(status).json({ error: error.message, code: error.code });
     }
   },
   async getMe(req: Request, res: Response): Promise<void> {

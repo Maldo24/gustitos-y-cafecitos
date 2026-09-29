@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { sessionController } from '../controllers/sessionController.js';
-import { authenticateToken } from '../middlewares/authMiddleware.js'; // <-- IMPORTANTE
+import { authenticateActiveUser } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
 // Protegemos todas las rutas de sesiones
-router.use(authenticateToken);
+router.use(authenticateActiveUser);
 
 // POST /api/sessions - Crear y calcular una nueva cuenta compartida
 router.post('/', sessionController.create);

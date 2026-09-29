@@ -1,17 +1,30 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import Button from "../components/Button";
 import { login } from "../api/auth";
+import { createAppeal } from "../api/appeals";
 import Input from "../components/Input";
+import Modal from "../components/Modal";
 
 function Login() {
   const navigate = useNavigate();
   const { loginContext } = useAuth();
+  const { showToast } = useToast();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Apelación por cuenta bloqueada
+  const [appealOpen, setAppealOpen] = useState(false);
+  const [appealEmail, setAppealEmail] = useState("");
+  const [appealReason, setAppealReason] = useState("");
+  const [appealError, setAppealError] = useState("");
+  const [appealBusy, setAppealBusy] = useState(false);
+
+  const isBlockedError = error.startsWith("Tu cuenta fue bloqueada");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +50,40 @@ function Login() {
     }
   };
 
+  const handleSubmitAppeal = async () => {
+    setAppealError("");
+
+    if (appealReason.trim().length < 15) {
+      setAppealError("Escribe al menos 15 caracteres explicando tu situación.");
+      return;
+    }
+
+    if (!appealEmail.trim()) {
+      setAppealError("Escribe el correo con el que te registraste.");
+      return;
+    }
+
+    setAppealBusy(true);
+    try {
+      // El usuario bloqueado se identifica con usuario + correo registrado
+      await createAppeal({
+        targetType: "user",
+        targetId: "",
+        reason: appealReason.trim(),
+        username: username.trim(),
+        email: appealEmail.trim(),
+      });
+      showToast("Tu apelación fue enviada. Te responderemos por notificación.");
+      setAppealOpen(false);
+      setAppealReason("");
+      setError("");
+    } catch (err: unknown) {
+      setAppealError(err instanceof Error ? err.message : "No se pudo enviar la apelación.");
+    } finally {
+      setAppealBusy(false);
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-full bg-butter-100 font-sans w-full">
 
@@ -55,7 +102,23 @@ function Login() {
             <p className="text-sm text-gray-500 mt-1 text-center">Ingresa para ver tus grupos</p>
           </div>
 
-          {error && <p className="text-red-500 text-sm mb-4 text-center bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+          {error && (
+            <div className="text-red-500 text-sm mb-4 text-center bg-red-50 rounded-lg px-3 py-2">
+              <p>{error}</p>
+              {isBlockedError && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppealError("");
+                    setAppealOpen(true);
+                  }}
+                  className="mt-2 underline font-bold cursor-pointer"
+                >
+                  Apelar el bloqueo
+                </button>
+              )}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
@@ -95,6 +158,46 @@ function Login() {
             </Link>
           </p>
         </div>
+
+        {appealOpen && (
+          <Modal title="Apelar el bloqueo" onClose={() => setAppealOpen(false)}>
+          <p className="text-sm text-gray-600 mb-3">
+            Un administrador revisará tu caso. Confirma tu correo registrado para que podamos
+            identificarte.
+          </p>
+          <div className="flex flex-col gap-3">
+            <Input
+              label="Correo registrado"
+              type="email"
+              placeholder="tu@correo.com"
+              value={appealEmail}
+              onChange={(value) => {
+                setAppealEmail(value);
+                setAppealError("");
+              }}
+            />
+            <Input
+              label="Por qué debería desbloquearse"
+              type="text"
+              placeholder="Mínimo 15 caracteres..."
+              value={appealReason}
+              onChange={(value) => {
+                setAppealReason(value);
+                setAppealError("");
+              }}
+            />
+            {appealError && <p className="text-red-500 text-sm">{appealError}</p>}
+            <div className="flex gap-2 justify-end">
+              <Button onClick={() => setAppealOpen(false)} disabled={appealBusy}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmitAppeal} disabled={appealBusy}>
+                {appealBusy ? "Enviando..." : "Enviar apelación"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
       </div>
     </div>
   );

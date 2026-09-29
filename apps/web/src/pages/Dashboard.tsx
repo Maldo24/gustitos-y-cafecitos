@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 import Input from "../components/Input";
 import Card from "../components/Card";
+import Badge from "../components/Badge";
 import Spinner from "../components/Spinner";
 import { createGroup, getGroupBySlug, getMyGroups } from "../api/groups";
 import type { Group } from "../types";
@@ -130,11 +131,15 @@ function Dashboard() {
                   to={`/grupo/${group.slug}`}
                   className="block bg-white p-4 rounded-xl shadow-md border border-butter-200 hover:shadow-lg transition-shadow"
                 >
-                  <div className="font-bold text-gray-800 text-lg">{group.name}</div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="font-bold text-gray-800 text-lg">{group.name}</div>
+                    {group.status === "deleted" && <Badge color="red">Eliminado</Badge>}
+                  </div>
                   <div className="text-sm text-gray-500">
                     {Array.isArray(group.members)
                       ? `${group.members.length} ${group.members.length === 1 ? "miembro" : "miembros"}`
                       : "Grupo"}
+                    {group.status === "deleted" && " · puedes apelar la eliminación"}
                   </div>
                 </Link>
               </li>

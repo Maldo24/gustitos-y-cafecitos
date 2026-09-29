@@ -10,6 +10,7 @@ import sessionRoutes from './routes/sessionRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import appealRoutes from './routes/appealRoutes.js';
 import { categoryService } from './services/categoryService.js';
 import { User } from './models/User.js';
 dotenv.config();
@@ -30,6 +31,7 @@ app.use('/api/sessions', sessionRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/appeals', appealRoutes)
 // Verificacion de estado del servicio (Health Check)
 app.get('/api/health', (req: Request, res: Response) => {
   const isConnected = mongoose.connection.readyState === 1;

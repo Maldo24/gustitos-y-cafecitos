@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { notificationController } from '../controllers/notificationController.js';
-import { authenticateToken } from '../middlewares/authMiddleware.js';
+import { authenticateActiveUser } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
 // Todas las notificaciones son privadas del usuario autenticado
-router.use(authenticateToken);
+router.use(authenticateActiveUser);
 
 // GET /api/notifications - Listar mis notificaciones
 router.get('/', notificationController.list);

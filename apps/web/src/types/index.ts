@@ -5,6 +5,8 @@ export interface User {
   names: string,
   firstSurname: string,
   role?: 'admin' | 'user';
+  blocked?: boolean;
+  blockReason?: string | null;
   createdAt: string;
 }
 
@@ -42,6 +44,24 @@ export interface Group {
   membersCount?: number;
   savedRestaurants: string[] | Restaurant[];
   restaurantsCount?: number;
+  status?: 'active' | 'deleted';
+  deletedAt?: string | null;
+  deletionReason?: string | null;
+  createdAt: string;
+}
+
+export type AppealStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Appeal {
+  _id: string;
+  targetType: 'group' | 'user';
+  targetId: string;
+  targetLabel: string;
+  userId: string | User;
+  reason: string;
+  status: AppealStatus;
+  resolutionNote: string | null;
+  reviewedAt: string | null;
   createdAt: string;
 }
 

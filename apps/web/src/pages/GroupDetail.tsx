@@ -8,7 +8,9 @@ import Select from "../components/Select";
 import Badge from "../components/Badge";
 import Spinner from "../components/Spinner";
 import { useAuth } from "../context/AuthContext";
-import { getGroupBySlug, getGroupMembers, addMember, joinGroup, removeMember, removeRestaurantFromGroup } from "../api/groups";
+import { useToast } from "../context/ToastContext";
+import { getGroupBySlug, getGroupMembers, addMember, joinGroup, leaveGroup, removeMember, removeRestaurantFromGroup } from "../api/groups";
+import { createAppeal, getMyAppeals } from "../api/appeals";
 import { getCategories, createCategory } from "../api/categories";
 import { getSessionsByGroup } from "../api/sessions";
 import {
@@ -18,7 +20,7 @@ import {
   toggleVote,
   type CreateRestaurantPayload,
 } from "../api/restaurants";
-import type { Category, Group, Restaurant, Session, User } from "../types";
+import type { Appeal, Category, Group, Restaurant, Session, User } from "../types";
 import { isGoogleMapsLink } from "../utils/validation";
 
 function getCategoryName(category: string | Category): string {
@@ -32,6 +34,7 @@ function getCategoryId(category: string | Category): string {
 function GroupDetail() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [group, setGroup] = useState<Group | null>(null);
@@ -72,7 +75,14 @@ function GroupDetail() {
 
   const [confirmRemoveMember, setConfirmRemoveMember] = useState<User | null>(null);
   const [confirmRemoveRestaurant, setConfirmRemoveRestaurant] = useState<Restaurant | null>(null);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const [adminActionLoading, setAdminActionLoading] = useState(false);
+
+  const [appealOpen, setAppealOpen] = useState(false);
+  const [appealReason, setAppealReason] = useState("");
+  const [appealError, setAppealError] = useState("");
+  const [appealBusy, setAppealBusy] = useState(false);
+  const [myAppeals, setMyAppeals] = useState<Appeal[]>([]);
 
   useEffect(() => {
     if (!slug) return;
@@ -90,6 +100,11 @@ function GroupDetail() {
           setRestaurants(restaurantsData);
           setCategories(categoriesData);
           setSessions(sessionsData);
+
+          // Si el grupo está eliminado cargamos mis apelaciones para mostrar el estado
+          if (data.status === "deleted") {
+            getMyAppeals().then(setMyAppeals).catch(() => undefined);
+          }
         });
       })
       .catch((err: unknown) => {
@@ -296,6 +311,48 @@ function GroupDetail() {
     }
   };
 
+  const handleLeaveGroup = async () => {
+    if (!group || adminActionLoading) return;
+    setAdminActionLoading(true);
+    try {
+      await leaveGroup(group._id);
+      showToast("Saliste del grupo.");
+      navigate("/dashboard");
+    } catch (err: unknown) {
+      setMemberError(err instanceof Error ? err.message : "No se pudo salir del grupo.");
+      setConfirmLeave(false);
+    } finally {
+      setAdminActionLoading(false);
+    }
+  };
+
+  const handleSubmitAppeal = async () => {
+    setAppealError("");
+    if (!group) return;
+
+    if (appealReason.trim().length < 15) {
+      setAppealError("Escribe al menos 15 caracteres explicando por qué debería restaurarse.");
+      return;
+    }
+
+    setAppealBusy(true);
+    try {
+      await createAppeal({
+        targetType: "group",
+        targetId: group._id,
+        reason: appealReason.trim(),
+      });
+      showToast("Tu apelación fue enviada.");
+      setAppealOpen(false);
+      setAppealReason("");
+      setMyAppeals(await getMyAppeals());
+    } catch (err: unknown) {
+      setAppealError(err instanceof Error ? err.message : "No se pudo enviar la apelación.");
+    } finally {
+      setAppealBusy(false);
+    }
+  };
+
   const filteredRestaurants = categoryFilter
     ? restaurants.filter((r) => getCategoryId(r.categoryId) === categoryFilter)
     : restaurants;
@@ -393,6 +450,17 @@ function GroupDetail() {
             <p className="text-xs text-gray-500">Necesitas unirte al grupo para invitar a alguien.</p>
           )}
         </form>
+
+        {isMember && !isAdmin && group.status !== "deleted" && (
+          <div className="mt-4">
+            <Button variant="danger" onClick={() => setConfirmLeave(true)}>
+              Salir del grupo
+            </Button>
+            <p className="text-xs text-gray-500 mt-1">
+              Dejas de ver el grupo y sus restaurantes. Puedes volver a unirte con el link o el código.
+            </p>
+          </div>
+        )}
       </div>
 
       <hr className="my-8 border-butter-200" />
@@ -522,7 +590,34 @@ function GroupDetail() {
             <Button type="submit" disabled={suggesting || !isMember}>
               {suggesting ? "Sugiriendo..." : "Sugerir restaurante"}
             </Button>
-            {!isMember && (
+      {group.status === "deleted" && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+          <p className="font-bold text-red-700 mb-1">Este grupo fue eliminado por un administrador</p>
+          {group.deletionReason && (
+            <p className="text-sm text-gray-700 mb-2">
+              <span className="font-bold">Motivo:</span> {group.deletionReason}
+            </p>
+          )}
+          {myAppeals.some((a) => a.targetId === group._id && a.status === "pending") ? (
+            <p className="text-sm text-gray-700">
+              Tu apelación está en revisión. Te avisaremos por notificación cuando el administrador la resuelva.
+            </p>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button variant="danger" onClick={() => setAppealOpen(true)}>
+                Apelar la eliminación
+              </Button>
+              {myAppeals.some((a) => a.targetId === group._id) && (
+                <span className="text-sm text-gray-600">
+                  Ya apelaste esta eliminación antes.
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!isMember && group.status !== "deleted" && (
               <p className="text-xs text-gray-500">Necesitas unirte al grupo para sugerir un restaurante.</p>
             )}
           </form>
@@ -673,6 +768,46 @@ function GroupDetail() {
             <Button onClick={handleForceCreate} disabled={suggesting}>
               {suggesting ? "Creando..." : "Crear de todas formas"}
             </Button>
+          </div>
+        </Modal>
+      )}
+
+      {confirmLeave && (
+        <ConfirmModal
+          title="Salir del grupo"
+          message={`¿Seguro que quieres salir de "${group.name}"? Dejarás de ver el grupo y sus restaurantes, pero puedes volver a unirte cuando quieras.`}
+          confirmLabel="Salir del grupo"
+          loading={adminActionLoading}
+          onCancel={() => setConfirmLeave(false)}
+          onConfirm={handleLeaveGroup}
+        />
+      )}
+
+      {appealOpen && (
+        <Modal title="Apelar la eliminación" onClose={() => setAppealOpen(false)}>
+          <p className="text-sm text-gray-600 mb-3">
+            Cuéntanos por qué debería restaurarse el grupo. El administrador va a leer tu justificación.
+          </p>
+          <div className="flex flex-col gap-3">
+            <Input
+              type="text"
+              label="Tu justificación"
+              placeholder="Mínimo 15 caracteres..."
+              value={appealReason}
+              onChange={(value) => {
+                setAppealReason(value);
+                setAppealError("");
+              }}
+            />
+            {appealError && <p className="text-red-500 text-sm">{appealError}</p>}
+            <div className="flex gap-2 justify-end">
+              <Button onClick={() => setAppealOpen(false)} disabled={appealBusy}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmitAppeal} disabled={appealBusy}>
+                {appealBusy ? "Enviando..." : "Enviar apelación"}
+              </Button>
+            </div>
           </div>
         </Modal>
       )}

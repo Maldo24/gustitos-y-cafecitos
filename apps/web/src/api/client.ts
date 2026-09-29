@@ -31,6 +31,13 @@ export async function apiClient<T>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+
+    // Cuenta bloqueada por un admin: cerramos sesión para que vuelva al login
+    // y pueda apelar desde ahí.
+    if (response.status === 403 && errorData.code === 'USER_BLOCKED') {
+      unauthorizedHandler?.();
+    }
+
     throw new Error(errorData.error || `Error HTTP: ${response.status}`);
   }
 

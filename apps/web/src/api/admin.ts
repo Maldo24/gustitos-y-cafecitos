@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { Group, User } from '../types';
+import type { Appeal, Group, User } from '../types';
 
 export interface AdminStats {
   users: number;
@@ -11,6 +11,9 @@ export interface AdminStats {
 
 export interface AdminUser extends User {
   role: 'admin' | 'user';
+  blocked: boolean;
+  blockReason: string | null;
+  blockedAt?: string | null;
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
@@ -52,5 +55,45 @@ export async function reviewPasswordRequest(
   return apiClient<{ message: string }>(`/admin/password-requests/${requestId}`, {
     method: 'PATCH',
     body: JSON.stringify({ action }),
+  });
+}
+
+/** Elimina un grupo (justificación obligatoria, mínimo 15 caracteres). */
+export async function deleteGroup(groupId: string, reason: string): Promise<{ message: string }> {
+  return apiClient<{ message: string }>(`/admin/groups/${groupId}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export async function restoreGroup(groupId: string): Promise<{ message: string }> {
+  return apiClient<{ message: string }>(`/admin/groups/${groupId}/restore`, {
+    method: 'POST',
+  });
+}
+
+export async function setUserBlocked(
+  userId: string,
+  blocked: boolean,
+  reason?: string
+): Promise<{ message: string }> {
+  return apiClient<{ message: string }>(`/admin/users/${userId}/block`, {
+    method: 'PATCH',
+    body: JSON.stringify({ blocked, reason }),
+  });
+}
+
+export async function getAdminAppeals(): Promise<Appeal[]> {
+  return apiClient<Appeal[]>('/admin/appeals');
+}
+
+export async function resolveAppeal(
+  appealId: string,
+  action: 'approve' | 'reject',
+  note?: string
+): Promise<{ message: string }> {
+  return apiClient<{ message: string }>(`/admin/appeals/${appealId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action, note }),
   });
 }

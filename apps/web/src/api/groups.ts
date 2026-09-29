@@ -43,6 +43,14 @@ export async function joinGroup(
   });
 }
 
+export async function leaveGroup(
+  groupId: string
+): Promise<{ message: string; group: Group }> {
+  return apiClient<{ message: string; group: Group }>(`/groups/${groupId}/leave`, {
+    method: 'POST',
+  });
+}
+
 export async function removeMember(
   groupId: string,
   memberId: string
